@@ -61,7 +61,7 @@ export default defineSchema({
     description: v.string(),
     offenseType: v.string(),
     incidentAddress: v.optional(v.string()),
-    county: v.optional(v.string()),
+    parish: v.optional(v.string()),
     cityState: v.string(),
     nearestIntersection: v.optional(v.string()),
     neighborhood: v.optional(v.string()),
@@ -86,7 +86,8 @@ export default defineSchema({
     .index("by_createdAt", ["createdAt"]) 
     .index("by_criminalId", ["criminalId"]) 
     .index("by_offenseType", ["offenseType"]) 
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_parish", ["parish"]),
 
   tips: defineTable({
     userId: v.optional(v.id("users")), // allow anonymous

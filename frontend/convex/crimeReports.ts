@@ -8,6 +8,7 @@ export const list = query({
   args: {
     status: v.optional(v.string()),
     offenseType: v.optional(v.string()),
+    parish: v.optional(v.string()),
   },
   returns: v.array(
     v.object({
@@ -21,7 +22,7 @@ export const list = query({
       description: v.string(),
       offenseType: v.string(),
       incidentAddress: v.optional(v.string()),
-      county: v.optional(v.string()),
+      parish: v.optional(v.string()),
       cityState: v.string(),
       nearestIntersection: v.optional(v.string()),
       neighborhood: v.optional(v.string()),
@@ -59,6 +60,12 @@ export const list = query({
         .withIndex("by_offenseType", (q) => q.eq("offenseType", args.offenseType!))
         .order("desc")
         .collect();
+    } else if (args.parish) {
+      reports = await ctx.db
+        .query("crimeReports")
+        .withIndex("by_parish", (q) => q.eq("parish", args.parish!))
+        .order("desc")
+        .collect();
     } else {
       reports = await ctx.db
         .query("crimeReports")
@@ -81,7 +88,7 @@ export const create = mutation({
     description: v.string(),
     offenseType: v.string(),
     incidentAddress: v.optional(v.string()),
-    county: v.optional(v.string()),
+    parish: v.optional(v.string()),
     cityState: v.string(),
     nearestIntersection: v.optional(v.string()),
     neighborhood: v.optional(v.string()),
@@ -128,7 +135,7 @@ export const create = mutation({
       description: args.description,
       offenseType: args.offenseType,
       incidentAddress: args.incidentAddress,
-      county: args.county,
+      parish: args.parish,
       cityState: args.cityState,
       nearestIntersection: args.nearestIntersection,
       neighborhood: args.neighborhood,
@@ -172,7 +179,7 @@ export const getByCriminal = query({
       description: v.string(),
       offenseType: v.string(),
       incidentAddress: v.optional(v.string()),
-      county: v.optional(v.string()),
+      parish: v.optional(v.string()),
       cityState: v.string(),
       nearestIntersection: v.optional(v.string()),
       neighborhood: v.optional(v.string()),

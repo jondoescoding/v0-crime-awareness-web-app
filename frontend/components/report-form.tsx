@@ -13,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CriminalSelector } from "@/components/criminal-selector"
-import { FileUpload } from "@/components/file-upload"
 import { AlertCircle } from "lucide-react"
 import type { Id } from "@/convex/_generated/dataModel"
 
@@ -86,6 +85,23 @@ const offenseTypes = [
   "Other",
 ]
 
+const jamaicanParishes = [
+  "Clarendon",
+  "Hanover",
+  "Kingston",
+  "Manchester",
+  "Portland",
+  "Saint Andrew",
+  "Saint Ann",
+  "Saint Catherine",
+  "Saint Elizabeth",
+  "Saint James",
+  "Saint Mary",
+  "Saint Thomas",
+  "Trelawny",
+  "Westmoreland",
+]
+
 const hearAboutOptions = [
   "Facebook",
   "Twitter",
@@ -107,9 +123,7 @@ const hearAboutOptions = [
 ]
 
 const additionalInfoOptions = [
-  "School Related & Bullying",
   "Wanted/Fugitive",
-  "Suspect",
   "Vehicle",
   "Drugs",
   "Abuse",
@@ -119,21 +133,17 @@ const additionalInfoOptions = [
 export function ReportForm() {
   const [reportType, setReportType] = useState<"existing" | "new">("new")
   const [selectedCriminal, setSelectedCriminal] = useState<string | null>(null)
+  const [criminalSearch, setCriminalSearch] = useState("")
   const [formData, setFormData] = useState({
     description: "",
     offenseType: "",
     address: "",
-    county: "",
+    parish: "",
     city: "",
-    intersection: "",
-    neighborhood: "",
     directions: "",
-    hearAbout: "",
-    newsLinks: "",
     additionalInfo: [] as string[],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [files, setFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const createReport = useMutation(api.crimeReports.create)
@@ -154,7 +164,7 @@ export function ReportForm() {
     }
 
     if (!formData.city.trim()) {
-      newErrors.city = "City/State is required"
+      newErrors.city = "City is required"
     }
 
     setErrors(newErrors)
@@ -172,13 +182,13 @@ export function ReportForm() {
 
     try {
       // Parse additional info checkboxes
-      const schoolRelated = formData.additionalInfo.includes("School Related & Bullying")
+      const schoolRelated = false
       const wantedFugitive = formData.additionalInfo.includes("Wanted/Fugitive")
       const drugsInvolved = formData.additionalInfo.includes("Drugs")
       const abuseInvolved = formData.additionalInfo.includes("Abuse")
       const weaponsInvolved = formData.additionalInfo.includes("Weapons")
 
-      const suspectInfo = formData.additionalInfo.includes("Suspect") ? "Suspect information provided" : undefined
+      const suspectInfo = undefined
       const vehicleInfo = formData.additionalInfo.includes("Vehicle") ? "Vehicle information provided" : undefined
 
       // Create the report
@@ -188,13 +198,13 @@ export function ReportForm() {
         description: formData.description,
         offenseType: formData.offenseType,
         incidentAddress: formData.address || undefined,
-        county: formData.county || undefined,
+        parish: formData.parish || undefined,
         cityState: formData.city,
-        nearestIntersection: formData.intersection || undefined,
-        neighborhood: formData.neighborhood || undefined,
+        nearestIntersection: undefined,
+        neighborhood: undefined,
         directionsToLocation: formData.directions || undefined,
-        howHeardProgram: formData.hearAbout || undefined,
-        newsStoryLinks: formData.newsLinks || undefined,
+        howHeardProgram: undefined,
+        newsStoryLinks: undefined,
         additionalInfo: formData.additionalInfo.join(", ") || undefined,
         schoolRelated,
         wantedFugitive,
@@ -203,7 +213,7 @@ export function ReportForm() {
         drugsInvolved,
         abuseInvolved,
         weaponsInvolved,
-        fileUploads: files.map((f) => f.name),
+        fileUploads: [],
         fileDescriptions: [],
         locationLat: undefined, // TODO: Add geocoding
         locationLng: undefined, // TODO: Add geocoding
@@ -214,17 +224,13 @@ export function ReportForm() {
         description: "",
         offenseType: "",
         address: "",
-        county: "",
+        parish: "",
         city: "",
-        intersection: "",
-        neighborhood: "",
         directions: "",
-        hearAbout: "",
-        newsLinks: "",
         additionalInfo: [],
       })
       setSelectedCriminal(null)
-      setFiles([])
+      setCriminalSearch("")
       setErrors({})
 
       alert("Report submitted successfully!")
@@ -253,7 +259,12 @@ export function ReportForm() {
             <TabsContent value="existing" className="space-y-4">
               <div className="space-y-2">
                 <Label>Select Criminal</Label>
-                <CriminalSelector selectedId={selectedCriminal} onSelect={setSelectedCriminal} />
+                <CriminalSelector 
+                  selectedId={selectedCriminal} 
+                  onSelect={setSelectedCriminal}
+                  search={criminalSearch}
+                  onSearchChange={setCriminalSearch}
+                />
                 {errors.criminal && (
                   <p className="flex items-center gap-1 text-sm text-destructive">
                     <AlertCircle className="h-3 w-3" />
@@ -330,25 +341,34 @@ export function ReportForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="county">County</Label>
-                <Input
-                  id="county"
-                  value={formData.county}
-                  onChange={(e) => setFormData({ ...formData, county: e.target.value })}
-                  placeholder="County name"
-                />
+                <Label htmlFor="parish">Parish</Label>
+                <Select
+                  value={formData.parish}
+                  onValueChange={(value) => setFormData({ ...formData, parish: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select parish" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jamaicanParishes.map((parish) => (
+                      <SelectItem key={parish} value={parish}>
+                        {parish}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="city">
-                City, State <span className="text-destructive">*</span>
+                City <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="city"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="City and state"
+                placeholder="City name"
                 className={errors.city ? "border-destructive" : ""}
               />
               {errors.city && (
@@ -359,28 +379,6 @@ export function ReportForm() {
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="intersection">Nearest Intersection or Crossing Street</Label>
-                <Input
-                  id="intersection"
-                  value={formData.intersection}
-                  onChange={(e) => setFormData({ ...formData, intersection: e.target.value })}
-                  placeholder="Intersection"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="neighborhood">Neighborhood or Subdivision</Label>
-                <Input
-                  id="neighborhood"
-                  value={formData.neighborhood}
-                  onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                  placeholder="Neighborhood"
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="directions">Directions to Location</Label>
               <Textarea
@@ -388,36 +386,6 @@ export function ReportForm() {
                 value={formData.directions}
                 onChange={(e) => setFormData({ ...formData, directions: e.target.value })}
                 placeholder="Provide detailed directions"
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="hearAbout">How did you hear about our program?</Label>
-              <Select
-                value={formData.hearAbout}
-                onValueChange={(value) => setFormData({ ...formData, hearAbout: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an option" />
-                </SelectTrigger>
-                <SelectContent>
-                  {hearAboutOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="newsLinks">Links to Online News Stories</Label>
-              <Textarea
-                id="newsLinks"
-                value={formData.newsLinks}
-                onChange={(e) => setFormData({ ...formData, newsLinks: e.target.value })}
-                placeholder="Copy and paste URLs (one per line)"
                 rows={3}
               />
             </div>
@@ -452,12 +420,6 @@ export function ReportForm() {
                   </label>
                 ))}
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>File Upload</Label>
-              <FileUpload files={files} onFilesChange={setFiles} />
-              <p className="text-xs text-muted-foreground">Upload images, videos, audio, or documents (Max 100MB)</p>
             </div>
           </div>
 
