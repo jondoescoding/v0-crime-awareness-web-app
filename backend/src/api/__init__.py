@@ -3,8 +3,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.wanted_persons import router as wanted_persons_router
 from api.reports import router as reports_router
+from api.chat import router as chat_router
+from api.wanted_persons import router as wanted_persons_router
 from core import get_logger
 
 
@@ -23,6 +24,7 @@ def create_app() -> FastAPI:
     
     app.include_router(wanted_persons_router)
     app.include_router(reports_router)
+    app.include_router(chat_router)
     logger.info("FastAPI application initialized")
     return app
 

@@ -2,8 +2,9 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { Navigation } from "@/components/navigation"
 import { ConvexClientProvider } from "@/components/convex-provider"
+import { CrimeChatWidget } from "@/components/crime-chat-widget"
+import { Navigation } from "@/components/navigation"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
@@ -27,6 +28,7 @@ export default function RootLayout({
         <ConvexClientProvider>
           <Navigation />
           <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+          <CrimeChatWidget />
           <Analytics />
           <Toaster />
         </ConvexClientProvider>
