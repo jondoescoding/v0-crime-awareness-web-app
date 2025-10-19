@@ -1,5 +1,6 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 /**
  * List all crime reports with optional filtering
@@ -149,6 +150,67 @@ export const create = mutation({
       locationLng: args.locationLng,
       status: "active",
       createdAt: now,
+    });
+  },
+});
+
+/**
+ * Create a new crime report with automatic geocoding
+ */
+export const createWithGeocoding = action({
+  args: {
+    reportType: v.union(v.literal("existing_criminal"), v.literal("new_crime")),
+    criminalId: v.optional(v.id("criminals")),
+    description: v.string(),
+    offenseType: v.string(),
+    incidentAddress: v.optional(v.string()),
+    county: v.optional(v.string()),
+    cityState: v.string(),
+    nearestIntersection: v.optional(v.string()),
+    neighborhood: v.optional(v.string()),
+    directionsToLocation: v.optional(v.string()),
+    howHeardProgram: v.optional(v.string()),
+    newsStoryLinks: v.optional(v.string()),
+    additionalInfo: v.optional(v.string()),
+    schoolRelated: v.boolean(),
+    wantedFugitive: v.boolean(),
+    suspectInfo: v.optional(v.string()),
+    vehicleInfo: v.optional(v.string()),
+    drugsInvolved: v.boolean(),
+    abuseInvolved: v.boolean(),
+    weaponsInvolved: v.boolean(),
+    fileUploads: v.array(v.string()),
+    fileDescriptions: v.array(v.string()),
+  },
+  returns: v.id("crimeReports"),
+  handler: async (ctx, args) => {
+    let locationLat: number | undefined;
+    let locationLng: number | undefined;
+
+    // Auto-geocode if address is provided
+    if (args.incidentAddress) {
+      try {
+        const geocodeResult = await ctx.runAction(api.geocoding.geocodeAddress, {
+          address: args.incidentAddress,
+          city: args.county,
+          state: args.cityState.split(',')[1]?.trim() || 'Texas'
+        });
+
+        if (geocodeResult.success && geocodeResult.coordinates) {
+          locationLat = geocodeResult.coordinates.lat;
+          locationLng = geocodeResult.coordinates.lng;
+        }
+      } catch (error) {
+        console.error("Geocoding failed:", error);
+        // Continue without coordinates
+      }
+    }
+
+    // Create the report with geocoded coordinates
+    return await ctx.runMutation(api.crimeReports.create, {
+      ...args,
+      locationLat,
+      locationLng,
     });
   },
 });

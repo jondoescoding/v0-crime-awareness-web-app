@@ -1,0 +1,6 @@
+{
+	"dependencies": {
+		"convex": "^1.28.0",
+		"serpapi": "^2.2.1"
+	}
+}

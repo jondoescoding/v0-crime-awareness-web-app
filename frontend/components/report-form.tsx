@@ -136,7 +136,7 @@ export function ReportForm() {
   const [files, setFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const createReport = useMutation(api.crimeReports.create)
+  const createReport = useMutation(api.crimeReports.createWithGeocoding)
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
