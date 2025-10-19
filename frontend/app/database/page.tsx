@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,99 +17,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 
-// Mock criminal database
-const criminals = [
-  {
-    id: "1",
-    name: "John Doe",
-    alias: "The Shadow",
-    crime: "Armed Robbery",
-    status: "Wanted",
-    image: "/placeholder.svg?height=200&width=200",
-    location: "Downtown District",
-    lastSeen: "2025-10-15",
-    description: "Male, 6'2\", brown hair, blue eyes. Known to frequent downtown area. Considered armed and dangerous.",
-    charges: ["Armed Robbery", "Assault", "Theft"],
-    reward: "$5,000",
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    alias: "Red Fox",
-    crime: "Fraud",
-    status: "At Large",
-    image: "/placeholder.svg?height=200&width=200",
-    location: "North Side",
-    lastSeen: "2025-10-12",
-    description: "Female, 5'6\", red hair, green eyes. Expert in identity theft and financial fraud.",
-    charges: ["Wire Fraud", "Identity Theft", "Money Laundering"],
-    reward: "$10,000",
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    alias: "Big Mike",
-    crime: "Drug Trafficking",
-    status: "Wanted",
-    image: "/placeholder.svg?height=200&width=200",
-    location: "East End",
-    lastSeen: "2025-10-10",
-    description: "Male, 6'0\", bald, brown eyes. Known drug dealer with connections to organized crime.",
-    charges: ["Drug Trafficking", "Possession with Intent", "Racketeering"],
-    reward: "$15,000",
-  },
-  {
-    id: "4",
-    name: "Sarah Williams",
-    alias: "Silent Sarah",
-    crime: "Assault",
-    status: "Wanted",
-    image: "/placeholder.svg?height=200&width=200",
-    location: "West Side",
-    lastSeen: "2025-10-08",
-    description: "Female, 5'8\", blonde hair, hazel eyes. History of violent behavior.",
-    charges: ["Aggravated Assault", "Battery", "Resisting Arrest"],
-    reward: "$3,000",
-  },
-  {
-    id: "5",
-    name: "Robert Chen",
-    alias: "Bobby C",
-    crime: "Burglary",
-    status: "At Large",
-    image: "/placeholder.svg?height=200&width=200",
-    location: "South District",
-    lastSeen: "2025-10-05",
-    description: "Male, 5'10\", black hair, brown eyes. Specializes in residential burglaries.",
-    charges: ["Burglary", "Breaking and Entering", "Theft"],
-    reward: "$2,500",
-  },
-  {
-    id: "6",
-    name: "Maria Garcia",
-    alias: "La Reina",
-    crime: "Human Trafficking",
-    status: "Wanted",
-    image: "/placeholder.svg?height=200&width=200",
-    location: "Central Area",
-    lastSeen: "2025-10-01",
-    description: "Female, 5'4\", dark hair, brown eyes. Leader of trafficking ring.",
-    charges: ["Human Trafficking", "Kidnapping", "Organized Crime"],
-    reward: "$25,000",
-  },
-]
-
 export default function DatabasePage() {
   const [search, setSearch] = useState("")
-  const [selectedCriminal, setSelectedCriminal] = useState<(typeof criminals)[0] | null>(null)
+  const criminals = useQuery(api.criminals.list, { search: search || undefined })
 
-  const filteredCriminals = criminals.filter(
-    (criminal) =>
-      criminal.name.toLowerCase().includes(search.toLowerCase()) ||
-      criminal.alias.toLowerCase().includes(search.toLowerCase()) ||
-      criminal.crime.toLowerCase().includes(search.toLowerCase()) ||
-      criminal.location.toLowerCase().includes(search.toLowerCase()),
-  )
+  if (criminals === undefined) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="text-center">Loading criminal database...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -122,7 +42,7 @@ export default function DatabasePage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name, alias, crime, or location..."
+            placeholder="Search by name, crime, or description..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 h-12 shadow-depth-sm"
@@ -131,15 +51,15 @@ export default function DatabasePage() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredCriminals.map((criminal) => (
-          <Dialog key={criminal.id}>
+        {criminals.map((criminal) => (
+          <Dialog key={criminal._id}>
             <DialogTrigger asChild>
               <Card className="cursor-pointer transition-all hover:shadow-depth-md shadow-depth-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
                       <CardTitle className="text-lg">{criminal.name}</CardTitle>
-                      <CardDescription className="text-sm">"{criminal.alias}"</CardDescription>
+                      <CardDescription className="text-sm">{criminal.primaryCrime}</CardDescription>
                     </div>
                     <Badge variant={criminal.status === "Wanted" ? "destructive" : "secondary"} className="shrink-0">
                       {criminal.status}
@@ -148,22 +68,24 @@ export default function DatabasePage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <img
-                    src={criminal.image || "/placeholder.svg"}
+                    src={criminal.headshotUrl || "/placeholder.svg"}
                     alt={criminal.name}
                     className="w-full aspect-square object-cover rounded-md"
                   />
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <AlertTriangle className="h-4 w-4 text-destructive" />
-                      <span className="font-medium">{criminal.crime}</span>
+                      <span className="font-medium">{criminal.primaryCrime}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{criminal.location}</span>
-                    </div>
+                    {criminal.locationLat && criminal.locationLng && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>Last Known Location</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
-                      <span>Last seen: {new Date(criminal.lastSeen).toLocaleDateString()}</span>
+                      <span>Added: {new Date(criminal.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                   <Button variant="outline" className="w-full bg-transparent" size="sm">
@@ -175,12 +97,12 @@ export default function DatabasePage() {
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-2xl">{criminal.name}</DialogTitle>
-                <DialogDescription>Alias: "{criminal.alias}"</DialogDescription>
+                <DialogDescription>Status: {criminal.status}</DialogDescription>
               </DialogHeader>
               <div className="space-y-6">
                 <div className="flex items-start gap-6">
                   <img
-                    src={criminal.image || "/placeholder.svg"}
+                    src={criminal.headshotUrl || "/placeholder.svg"}
                     alt={criminal.name}
                     className="w-48 h-48 object-cover rounded-md shadow-depth-md"
                   />
@@ -192,41 +114,36 @@ export default function DatabasePage() {
                       </Badge>
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-1">Reward</h3>
-                      <p className="text-2xl font-bold text-primary">{criminal.reward}</p>
+                      <h3 className="font-semibold mb-1">Primary Crime</h3>
+                      <p className="text-lg font-medium text-destructive">{criminal.primaryCrime}</p>
                     </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">Last Known Location</h3>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span>{criminal.location}</span>
+                    {criminal.locationLat && criminal.locationLng && (
+                      <div>
+                        <h3 className="font-semibold mb-1">Last Known Location</h3>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          <span>
+                            {criminal.locationLat.toFixed(4)}, {criminal.locationLng.toFixed(4)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div>
-                      <h3 className="font-semibold mb-1">Last Seen</h3>
+                      <h3 className="font-semibold mb-1">Added to Database</h3>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(criminal.lastSeen).toLocaleDateString()}</span>
+                        <span>{new Date(criminal.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{criminal.description}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-2">Charges</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {criminal.charges.map((charge, index) => (
-                      <Badge key={index} variant="outline">
-                        {charge}
-                      </Badge>
-                    ))}
+                {criminal.description && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Description</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{criminal.description}</p>
                   </div>
-                </div>
+                )}
 
                 <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
                   <div className="flex items-start gap-3">
@@ -250,7 +167,7 @@ export default function DatabasePage() {
         ))}
       </div>
 
-      {filteredCriminals.length === 0 && (
+      {criminals.length === 0 && (
         <Card className="shadow-depth-sm">
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">No criminals found matching your search</p>
