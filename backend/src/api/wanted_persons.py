@@ -9,10 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from core import get_logger
 from models import WantedPerson, WantedPersonsPayload
 from services.wanted_persons_scraper import scrape_wanted_persons
-from services.wanted_persons_storage import load_wanted_persons
 
 LOGGER = get_logger(__name__)
 router = APIRouter(prefix="/wanted-persons", tags=["wanted-persons"])
+
+
+def get_scraper_dependency() -> Callable[[], WantedPersonsPayload]:
+    return scrape_wanted_persons
 
 
 def _filter_records(
@@ -39,11 +42,16 @@ def _filter_records(
 
 @router.get("/", response_model=WantedPersonsPayload)
 def get_wanted_persons(
+    scraper: Callable[[], WantedPersonsPayload] = Depends(get_scraper_dependency),
     station: Optional[str] = Query(default=None, description="Filter by police station substring"),
     alias: Optional[str] = Query(default=None, description="Filter by alias substring"),
 ) -> WantedPersonsPayload:
-    """Return the stored wanted persons dataset with optional filters."""
-    payload = load_wanted_persons()
+    """Scrape wanted persons dataset on demand with optional filters."""
+    try:
+        payload = scraper()
+    except RuntimeError as err:
+        LOGGER.error("Failed to retrieve wanted persons: %s", err)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)) from err
     filtered = _filter_records(payload.items, station, alias)
     LOGGER.info(
         "Returning %s wanted persons after filtering (station=%s, alias=%s)",
@@ -56,10 +64,6 @@ def get_wanted_persons(
         source_url=payload.source_url,
         items=filtered,
     )
-
-
-def get_scraper_dependency() -> Callable[[], WantedPersonsPayload]:
-    return scrape_wanted_persons
 
 
 @router.post(

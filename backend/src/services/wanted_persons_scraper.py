@@ -9,7 +9,6 @@ from firecrawl import FirecrawlApp  # type: ignore[import-untyped]
 
 from core import get_logger, get_settings
 from models import WantedPerson, WantedPersonsPayload
-from services.wanted_persons_storage import upsert_wanted_persons
 
 LOGGER = get_logger(__name__)
 
@@ -91,7 +90,7 @@ def _extract_records(raw: Dict[str, Any]) -> Iterable[WantedPerson]:
 
 
 def scrape_wanted_persons() -> WantedPersonsPayload:
-    """Scrape wanted persons data via Firecrawl and persist results."""
+    """Scrape wanted persons data via Firecrawl and return normalized payload."""
     settings = get_settings()
     if not settings.firecrawl_api_key:
         raise RuntimeError("FIRECRAWL_API_KEY is not configured; cannot run scrape")
@@ -100,20 +99,37 @@ def scrape_wanted_persons() -> WantedPersonsPayload:
     client = _create_client(settings.firecrawl_api_key)
 
     response = client.extract(
-        {
-            "url": settings.wanted_persons_source_url,
-            "schema": _build_extract_schema(),
-            "options": {"includeHtml": False, "includeMarkdown": False},
-        },
+        urls=[settings.wanted_persons_source_url],
+        prompt=(
+            "Extract the full name, alias, crime(s), image URL, and police station "
+            "location for each wanted person. Ensure that the full name is included."
+        ),
+        schema=_build_extract_schema(),
+        enable_web_search=True,
+        agent={"model": "FIRE-1"},
     )
 
-    if not isinstance(response, dict):
-        raise RuntimeError("Unexpected Firecrawl response format")
+    # Convert Pydantic model to dict for simpler handling
+    response_dict = response.model_dump() if hasattr(response, "model_dump") else response.dict()
 
-    records = list(_extract_records(response))
+    if not response_dict.get("success"):
+        error_msg = response_dict.get("error", "Unknown error")
+        raise RuntimeError(f"Firecrawl extraction failed: {error_msg}")
+
+    response_data = response_dict.get("data") or {}
+    records = list(_extract_records(response_data))
     LOGGER.info("Firecrawl returned %s wanted person records", len(records))
 
+    deduped: dict[tuple[str, str | None], WantedPerson] = {}
+    for person in records:
+        key = (person.full_name.lower(), person.alias.lower() if person.alias else None)
+        deduped[key] = person
+
     scraped_at = datetime.now(timezone.utc)
-    payload = upsert_wanted_persons(records, scraped_at)
+    payload = WantedPersonsPayload(
+        scraped_at=scraped_at,
+        source_url=settings.wanted_persons_source_url,
+        items=list(deduped.values()),
+    )
     LOGGER.info("Wanted persons dataset updated at %s", scraped_at.isoformat())
     return payload
