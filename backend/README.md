@@ -224,6 +224,39 @@ Manually trigger a scrape to refresh data.
 curl -X POST http://localhost:8000/wanted-persons/scrape
 ```
 
+### POST /reports/daily
+
+Generate and email a 24-hour crime intelligence report using DSPy and OpenRouter.
+
+**Request Body:** None required
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "message": "Report generated and sent successfully"
+}
+```
+
+**Status Codes:**
+
+- `202 Accepted`: Report generation triggered successfully
+- `500 Internal Server Error`: Report generation failed
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:8000/reports/daily
+```
+
+**Report Features:**
+
+- Collects all crime reports, tips, and criminal updates from past 24 hours
+- Uses DSPy with chain-of-thought reasoning via OpenRouter
+- Generates structured sections: Overview, Incident Breakdown, Hotspot Analysis, Tips and Leads, Action Items
+- Emails report to all configured recipients via Resend
+
 ## Configuration
 
 ### Environment Variables
@@ -232,6 +265,10 @@ curl -X POST http://localhost:8000/wanted-persons/scrape
 |----------|----------|---------|-------------|
 | `FIRECRAWL_API_KEY` | Yes | None | API key for Firecrawl (get from https://www.firecrawl.dev) |
 | `WANTED_PERSONS_SOURCE_URL` | No | `https://jcf.gov.jm/crime/wanted-persons/` | URL to scrape for wanted persons |
+| `OPENROUTER_API_KEY` | Yes | None | API key for OpenRouter LLM access (get from https://openrouter.ai) |
+| `RESEND_API_KEY` | Yes | None | API key for Resend email service (get from https://resend.com) |
+| `CONVEX_DEPLOYMENT_URL` | Yes | None | Convex deployment URL for database access |
+| `RECIPIENTS` | Yes | None | Comma-separated email addresses to receive crime intelligence reports |
 
 ### Firecrawl Extraction Schema
 

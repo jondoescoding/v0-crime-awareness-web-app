@@ -12,6 +12,9 @@ dependencies = [
     "pydantic>=2.7.0",
     "python-dotenv>=1.0.1",
     "pytest>=8.2.0",
+    "convex>=0.5.0",
+    "dspy-ai>=2.5.0",
+    "resend>=2.4.0",
 ]
 
 [tool.pytest.ini_options]

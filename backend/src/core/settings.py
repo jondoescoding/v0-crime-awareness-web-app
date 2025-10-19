@@ -15,6 +15,10 @@ _SETTINGS_CACHE: "Settings | None" = None
 class Settings:
     firecrawl_api_key: str | None
     wanted_persons_source_url: str
+    openrouter_api_key: str | None
+    resend_api_key: str | None
+    convex_deployment_url: str | None
+    recipients: str | None
 
 
 def _build_settings(overrides: Dict[str, Any] | None = None) -> Settings:
@@ -26,9 +30,18 @@ def _build_settings(overrides: Dict[str, Any] | None = None) -> Settings:
         "WANTED_PERSONS_SOURCE_URL",
         "https://jcf.gov.jm/crime/wanted-persons/",
     )
+    openrouter_api_key = overrides.get("openrouter_api_key") or os.getenv("OPENROUTER_API_KEY")
+    resend_api_key = overrides.get("resend_api_key") or os.getenv("RESEND_API_KEY")
+    convex_deployment_url = overrides.get("convex_deployment_url") or os.getenv("CONVEX_DEPLOYMENT_URL")
+    recipients = overrides.get("recipients") or os.getenv("RECIPIENTS")
+    
     return Settings(
         firecrawl_api_key=firecrawl_api_key,
         wanted_persons_source_url=source_url,
+        openrouter_api_key=openrouter_api_key,
+        resend_api_key=resend_api_key,
+        convex_deployment_url=convex_deployment_url,
+        recipients=recipients,
     )
 
 

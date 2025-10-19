@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Navigation } from "@/components/navigation"
 import { ConvexClientProvider } from "@/components/convex-provider"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -27,6 +28,7 @@ export default function RootLayout({
           <Navigation />
           <main className="min-h-[calc(100vh-4rem)]">{children}</main>
           <Analytics />
+          <Toaster />
         </ConvexClientProvider>
       </body>
     </html>
