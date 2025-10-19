@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CriminalSelector } from "@/components/criminal-selector"
 import { FileUpload } from "@/components/file-upload"
 import { AlertCircle } from "lucide-react"
+import type { Id } from "@/convex/_generated/dataModel"
 
 const offenseTypes = [
   "Abduction",
@@ -131,6 +134,9 @@ export function ReportForm() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [files, setFiles] = useState<File[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const createReport = useMutation(api.crimeReports.create)
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -155,13 +161,78 @@ export function ReportForm() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (validateForm()) {
-      console.log("Form submitted:", { reportType, selectedCriminal, formData, files })
-      // Handle form submission
+    if (!validateForm()) {
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Parse additional info checkboxes
+      const schoolRelated = formData.additionalInfo.includes("School Related & Bullying")
+      const wantedFugitive = formData.additionalInfo.includes("Wanted/Fugitive")
+      const drugsInvolved = formData.additionalInfo.includes("Drugs")
+      const abuseInvolved = formData.additionalInfo.includes("Abuse")
+      const weaponsInvolved = formData.additionalInfo.includes("Weapons")
+
+      const suspectInfo = formData.additionalInfo.includes("Suspect") ? "Suspect information provided" : undefined
+      const vehicleInfo = formData.additionalInfo.includes("Vehicle") ? "Vehicle information provided" : undefined
+
+      // Create the report
+      await createReport({
+        reportType: reportType === "existing" ? "existing_criminal" : "new_crime",
+        criminalId: selectedCriminal ? (selectedCriminal as Id<"criminals">) : undefined,
+        description: formData.description,
+        offenseType: formData.offenseType,
+        incidentAddress: formData.address || undefined,
+        county: formData.county || undefined,
+        cityState: formData.city,
+        nearestIntersection: formData.intersection || undefined,
+        neighborhood: formData.neighborhood || undefined,
+        directionsToLocation: formData.directions || undefined,
+        howHeardProgram: formData.hearAbout || undefined,
+        newsStoryLinks: formData.newsLinks || undefined,
+        additionalInfo: formData.additionalInfo.join(", ") || undefined,
+        schoolRelated,
+        wantedFugitive,
+        suspectInfo,
+        vehicleInfo,
+        drugsInvolved,
+        abuseInvolved,
+        weaponsInvolved,
+        fileUploads: files.map((f) => f.name),
+        fileDescriptions: [],
+        locationLat: undefined, // TODO: Add geocoding
+        locationLng: undefined, // TODO: Add geocoding
+      })
+
+      // Reset form
+      setFormData({
+        description: "",
+        offenseType: "",
+        address: "",
+        county: "",
+        city: "",
+        intersection: "",
+        neighborhood: "",
+        directions: "",
+        hearAbout: "",
+        newsLinks: "",
+        additionalInfo: [],
+      })
+      setSelectedCriminal(null)
+      setFiles([])
+      setErrors({})
+
       alert("Report submitted successfully!")
+    } catch (error) {
+      console.error("Error submitting report:", error)
+      alert("Failed to submit report. Please try again.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -390,8 +461,13 @@ export function ReportForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full shadow-depth-sm hover:shadow-depth-md transition-shadow" size="lg">
-            Submit Report
+          <Button 
+            type="submit" 
+            className="w-full shadow-depth-sm hover:shadow-depth-md transition-shadow" 
+            size="lg"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit Report"}
           </Button>
         </CardContent>
       </Card>
