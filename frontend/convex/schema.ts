@@ -61,7 +61,7 @@ export default defineSchema({
     description: v.string(),
     offenseType: v.string(),
     incidentAddress: v.optional(v.string()),
-    county: v.optional(v.string()),
+    parish: v.optional(v.string()),
     cityState: v.string(),
     nearestIntersection: v.optional(v.string()),
     neighborhood: v.optional(v.string()),
