@@ -1,0 +1,30 @@
+{
+  "scraped_at": "2025-10-19T00:28:31.787000+00:00",
+  "source_url": "https://jcf.gov.jm/crime/wanted-persons/",
+  "items": [
+    {
+      "full_name": "Courtney Sands",
+      "alias": "Joshua",
+      "crimes": ["Murder"],
+      "image_url": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.20-AM-495x400.jpeg",
+      "police_station": "Kingston Central Police",
+      "source_url": "https://jcf.gov.jm/crime/wanted-persons/"
+    },
+    {
+      "full_name": "Kafore Barley",
+      "alias": "Hunter/Sparta/CJ",
+      "crimes": ["Shooting with Intent"],
+      "image_url": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.21-AM-1-495x400.jpeg",
+      "police_station": "Clarendon Police",
+      "source_url": "https://jcf.gov.jm/crime/wanted-persons/"
+    },
+    {
+      "full_name": "Gaveen Hurd",
+      "alias": "Bones",
+      "crimes": ["Murder"],
+      "image_url": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.21-AM-495x400.jpeg",
+      "police_station": "St. James Police",
+      "source_url": "https://jcf.gov.jm/crime/wanted-persons/"
+    }
+  ]
+}
