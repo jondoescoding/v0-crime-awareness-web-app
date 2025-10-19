@@ -46,7 +46,44 @@ def get_wanted_persons(
     station: Optional[str] = Query(default=None, description="Filter by police station substring"),
     alias: Optional[str] = Query(default=None, description="Filter by alias substring"),
 ) -> WantedPersonsPayload:
-    """Scrape wanted persons dataset on demand with optional filters."""
+    """
+    Retrieve wanted persons dataset with optional filters.
+    
+    **Endpoint:** `GET /wanted-persons/`
+    
+    **Query Parameters:**
+    - `station` (optional): Filter results by police station name (case-insensitive substring match)
+    - `alias` (optional): Filter results by alias (case-insensitive substring match)
+    
+    **Examples:**
+    - `GET /wanted-persons/` - Get all wanted persons
+    - `GET /wanted-persons/?station=central` - Get persons wanted by stations containing "central"
+    - `GET /wanted-persons/?alias=slim` - Get persons with alias containing "slim"
+    - `GET /wanted-persons/?station=central&alias=slim` - Combined filters (AND logic)
+    
+    **Response (200 OK):**
+    ```json
+    {
+        "scraped_at": "2025-10-19T12:30:00Z",
+        "source_url": "https://www.saps.gov.za/wanted/wantedlist.php",
+        "items": [
+            {
+                "full_name": "John Doe",
+                "alias": "Slim",
+                "crimes": ["Armed Robbery", "Murder"],
+                "image_url": "https://example.com/image.jpg",
+                "police_station": "Central Police Station",
+                "source_url": "https://example.com/details"
+            }
+        ]
+    }
+    ```
+    
+    **Errors:**
+    - `500 Internal Server Error`: Scraping service failed or FIRECRAWL_API_KEY missing
+    
+    **Note:** This endpoint performs live scraping on each request. Use POST /wanted-persons/scrape for explicit refresh.
+    """
     try:
         payload = scraper()
     except RuntimeError as err:
@@ -70,11 +107,45 @@ def get_wanted_persons(
     "/scrape",
     response_model=WantedPersonsPayload,
     status_code=status.HTTP_202_ACCEPTED,
-    description="Trigger a Firecrawl scrape to refresh wanted persons data.",
 )
 def refresh_wanted_persons(
     scraper: Callable[[], WantedPersonsPayload] = Depends(get_scraper_dependency),
 ) -> WantedPersonsPayload:
+    """
+    Trigger explicit scrape to refresh wanted persons data.
+    
+    **Endpoint:** `POST /wanted-persons/scrape`
+    
+    **Request Body:** None required
+    
+    **Response (202 Accepted):**
+    ```json
+    {
+        "scraped_at": "2025-10-19T12:30:00Z",
+        "source_url": "https://www.saps.gov.za/wanted/wantedlist.php",
+        "items": [
+            {
+                "full_name": "John Doe",
+                "alias": "Slim",
+                "crimes": ["Armed Robbery", "Murder"],
+                "image_url": "https://example.com/image.jpg",
+                "police_station": "Central Police Station",
+                "source_url": "https://example.com/details"
+            }
+        ]
+    }
+    ```
+    
+    **Description:**
+    Forces a fresh scrape of the SAPS wanted persons website using Firecrawl. 
+    Returns the complete unfiltered dataset.
+    
+    **Errors:**
+    - `500 Internal Server Error`: Firecrawl service failure or missing FIRECRAWL_API_KEY
+    
+    **Environment Variables Required:**
+    - `FIRECRAWL_API_KEY`: API key for Firecrawl scraping service
+    """
     try:
         payload = scraper()
     except RuntimeError as err:
