@@ -102,7 +102,7 @@ const createCustomIcon = (color: string, icon: any) => {
 
 const crimeIcon = createCustomIcon('#dc2626', '🚨');
 const policeIcon = createCustomIcon('#2563eb', '👮');
-const fireIcon = createCustomIcon('#dc2626', '🚒');
+const fireIcon = createCustomIcon('#ff4000', '🚒');
 const hospitalIcon = createCustomIcon('#10b981', '🏥');
 
 // Map click handler component
@@ -321,7 +321,7 @@ export default function InteractiveCrimeMap() {
             incidentAddress: report.incidentAddress,
             neighborhood: report.neighborhood,
             cityState: report.cityState,
-            county: report.county,
+            //county: report.county,
           });
 
           if (geocodeResult) {

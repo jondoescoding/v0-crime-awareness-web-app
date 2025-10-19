@@ -65,6 +65,7 @@ type Report = {
 
 export default function FeedPage() {
   const [selectedParish, setSelectedParish] = useState<string | undefined>(undefined)
+  const [showFilters, setShowFilters] = useState(false)
   const reports = useQuery(api.crimeReports.list, { 
     status: undefined,
     parish: selectedParish 
@@ -149,77 +150,89 @@ export default function FeedPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-balance text-4xl font-bold tracking-tight">Activity Feed</h1>
             <p className="mt-3 text-pretty text-lg text-muted-foreground leading-relaxed">
               Real-time updates on criminal activity and investigations in your area
             </p>
           </div>
-          <Button 
-            onClick={handleGenerateReport} 
-            disabled={isGeneratingReport}
-            className="shrink-0"
-            size="lg"
-          >
-            {isGeneratingReport ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <FileText className="mr-2 h-4 w-4" />
-                Generate 24h Report
-              </>
-            )}
-          </Button>
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+            <Button
+              variant={showFilters ? "secondary" : "outline"}
+              onClick={() => setShowFilters((value) => !value)}
+              className="sm:w-auto"
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              {showFilters ? "Hide filters" : "Advanced filters"}
+            </Button>
+            <Button 
+              onClick={handleGenerateReport} 
+              disabled={isGeneratingReport}
+              className="shrink-0"
+              size="lg"
+            >
+              {isGeneratingReport ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate 24h Report
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Filter Section */}
-      <Card className="mb-6 shadow-depth-sm">
-        <CardContent className="pt-0">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="flex items-center gap-2 text-sm font-medium shrink-0">
-              <Filter className="h-4 w-4" />
-              <span>Filter by Parish</span>
+      {showFilters && (
+        <Card className="mb-6 shadow-depth-sm">
+          <CardContent className="pt-0">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="flex items-center gap-2 text-sm font-medium shrink-0">
+                <Filter className="h-4 w-4" />
+                <span>Filter by Parish</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 flex-1">
+                <Select
+                  value={selectedParish}
+                  onValueChange={(value) => setSelectedParish(value)}
+                >
+                  <SelectTrigger className="w-[240px]">
+                    <SelectValue placeholder="All Parishes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jamaicanParishes.map((parish) => (
+                      <SelectItem key={parish} value={parish}>
+                        {parish}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedParish && (
+                  <>
+                    <Badge variant="secondary" className="rounded-sm">
+                      {selectedParish}
+                    </Badge>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedParish(undefined)}>
+                      Clear
+                    </Button>
+                  </>
+                )}
+                {isUpdating && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Updating
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3 flex-1">
-              <Select
-                value={selectedParish}
-                onValueChange={(value) => setSelectedParish(value)}
-              >
-                <SelectTrigger className="w-[240px]">
-                  <SelectValue placeholder="All Parishes" />
-                </SelectTrigger>
-                <SelectContent>
-                  {jamaicanParishes.map((parish) => (
-                    <SelectItem key={parish} value={parish}>
-                      {parish}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedParish && (
-                <>
-                  <Badge variant="secondary" className="rounded-sm">
-                    {selectedParish}
-                  </Badge>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedParish(undefined)}>
-                    Clear
-                  </Button>
-                </>
-              )}
-              {isUpdating && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Updating
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {isInitialLoading ? (
         <div className="space-y-4">
