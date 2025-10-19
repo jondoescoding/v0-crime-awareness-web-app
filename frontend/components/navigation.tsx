@@ -8,7 +8,7 @@ import { AlertCircle, Database, Activity, Map, FileText } from "lucide-react"
 const navItems = [
   {
     title: "Report Crime",
-    href: "/",
+    href: "/report",
     icon: FileText,
   },
   {
@@ -35,10 +35,10 @@ export function Navigation() {
     <nav className="border-b border-border bg-card">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <AlertCircle className="h-6 w-6" />
             <span className="text-lg font-semibold">Informa</span>
-          </div>
+          </Link>
 
           <div className="flex items-center gap-1">
             {navItems.map((item) => {
