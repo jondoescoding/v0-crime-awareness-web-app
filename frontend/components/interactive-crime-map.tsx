@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, Tooltip } from "react-leaflet";
 import L from "leaflet";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { 
   AlertTriangle, 
   Shield, 
@@ -20,6 +22,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import dynamic from 'next/dynamic';
+import { geocodeFullAddress } from "@/lib/geocoding";
 
 // Dynamically import analytics to avoid SSR issues
 const Analytics = dynamic(() => import('./simple-analytics'), {
@@ -37,14 +40,35 @@ L.Icon.Default.mergeOptions({
 
 // Types
 interface CrimeReport {
-  id: string;
-  type: 'theft' | 'assault' | 'vandalism' | 'burglary' | 'other';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  location: [number, number];
+  _id: string;
+  reportType: 'existing_criminal' | 'new_crime';
+  offenseType: string;
   description: string;
-  timestamp: Date;
-  status: 'active' | 'investigating' | 'resolved';
-  reporter?: string;
+  cityState: string;
+  incidentAddress?: string;
+  neighborhood?: string;
+  county?: string;
+  locationLat?: number;
+  locationLng?: number;
+  status: string;
+  createdAt: number;
+  criminalName?: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  drugsInvolved?: boolean;
+  weaponsInvolved?: boolean;
+  abuseInvolved?: boolean;
+}
+
+interface MapCrimeMarker {
+  id: string;
+  location: [number, number];
+  offenseType: string;
+  description: string;
+  cityState: string;
+  status: string;
+  createdAt: number;
+  criminalName?: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
 interface EmergencyService {
@@ -54,16 +78,6 @@ interface EmergencyService {
   location: [number, number];
   status: 'available' | 'busy' | 'offline';
   contact: string;
-}
-
-interface AlertZone {
-  id: string;
-  name: string;
-  center: [number, number];
-  radius: number;
-  level: 'low' | 'medium' | 'high' | 'critical';
-  description: string;
-  active: boolean;
 }
 
 // Custom marker icons
@@ -89,7 +103,7 @@ const createCustomIcon = (color: string, icon: any) => {
 const crimeIcon = createCustomIcon('#dc2626', '🚨');
 const policeIcon = createCustomIcon('#2563eb', '👮');
 const fireIcon = createCustomIcon('#dc2626', '🚒');
-const alertIcon = createCustomIcon('#f59e0b', '⚠️');
+const hospitalIcon = createCustomIcon('#10b981', '🏥');
 
 // Map click handler component
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
@@ -101,144 +115,266 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null;
 }
 
+// Hardcoded Emergency Services for Jamaica
+const JAMAICA_EMERGENCY_SERVICES: EmergencyService[] = [
+  // Police Stations - Kingston & St. Andrew
+  { id: 'ps1', type: 'police', name: 'Kingston Central Police Station', location: [17.9714, -76.7932], status: 'available', contact: '119' },
+  { id: 'ps2', type: 'police', name: 'Half Way Tree Police Station', location: [18.0123, -76.7967], status: 'available', contact: '119' },
+  { id: 'ps3', type: 'police', name: 'Cross Roads Police Station', location: [18.0019, -76.7942], status: 'available', contact: '119' },
+  { id: 'ps4', type: 'police', name: 'Constant Spring Police Station', location: [18.0297, -76.7984], status: 'available', contact: '119' },
+  { id: 'ps5', type: 'police', name: 'Matilda\'s Corner Police Station', location: [18.0389, -76.8061], status: 'available', contact: '119' },
+  { id: 'ps6', type: 'police', name: 'Harbour View Police Station', location: [17.9608, -76.7378], status: 'available', contact: '119' },
+  { id: 'ps7', type: 'police', name: 'Port Royal Police Station', location: [17.9369, -76.8419], status: 'available', contact: '119' },
+  
+  // Police Stations - St. Catherine
+  { id: 'ps8', type: 'police', name: 'Spanish Town Police Station', location: [17.9961, -76.9547], status: 'available', contact: '119' },
+  { id: 'ps9', type: 'police', name: 'Portmore Police Station', location: [17.9557, -76.8815], status: 'available', contact: '119' },
+  { id: 'ps10', type: 'police', name: 'Old Harbour Police Station', location: [17.9431, -77.1089], status: 'available', contact: '119' },
+  { id: 'ps11', type: 'police', name: 'Linstead Police Station', location: [18.1350, -77.0322], status: 'available', contact: '119' },
+  
+  // Police Stations - St. James
+  { id: 'ps12', type: 'police', name: 'Montego Bay Police Station', location: [18.4762, -77.8939], status: 'available', contact: '119' },
+  { id: 'ps13', type: 'police', name: 'Anchovy Police Station', location: [18.4086, -77.9633], status: 'available', contact: '119' },
+  { id: 'ps14', type: 'police', name: 'Cambridge Police Station', location: [18.3800, -77.8200], status: 'available', contact: '119' },
+  
+  // Police Stations - St. Ann
+  { id: 'ps15', type: 'police', name: 'Ocho Rios Police Station', location: [18.4078, -77.1032], status: 'available', contact: '119' },
+  { id: 'ps16', type: 'police', name: 'St. Ann\'s Bay Police Station', location: [18.4378, -77.2011], status: 'available', contact: '119' },
+  { id: 'ps17', type: 'police', name: 'Brown\'s Town Police Station', location: [18.3944, -77.3636], status: 'available', contact: '119' },
+  
+  // Police Stations - Manchester
+  { id: 'ps18', type: 'police', name: 'Mandeville Police Station', location: [18.0418, -77.5050], status: 'available', contact: '119' },
+  { id: 'ps19', type: 'police', name: 'Christiana Police Station', location: [18.2186, -77.4144], status: 'available', contact: '119' },
+  
+  // Police Stations - Clarendon
+  { id: 'ps20', type: 'police', name: 'May Pen Police Station', location: [17.9644, -77.2447], status: 'available', contact: '119' },
+  { id: 'ps21', type: 'police', name: 'Frankfield Police Station', location: [18.0503, -77.3231], status: 'available', contact: '119' },
+  
+  // Police Stations - Portland
+  { id: 'ps22', type: 'police', name: 'Port Antonio Police Station', location: [18.1778, -76.4506], status: 'available', contact: '119' },
+  { id: 'ps23', type: 'police', name: 'Buff Bay Police Station', location: [18.1850, -76.6742], status: 'available', contact: '119' },
+  
+  // Police Stations - St. Thomas
+  { id: 'ps24', type: 'police', name: 'Morant Bay Police Station', location: [17.8814, -76.4092], status: 'available', contact: '119' },
+  { id: 'ps25', type: 'police', name: 'Yallahs Police Station', location: [17.8717, -76.5667], status: 'available', contact: '119' },
+  
+  // Police Stations - Trelawny
+  { id: 'ps26', type: 'police', name: 'Falmouth Police Station', location: [18.4925, -77.6542], status: 'available', contact: '119' },
+  { id: 'ps27', type: 'police', name: 'Clark\'s Town Police Station', location: [18.4372, -77.5947], status: 'available', contact: '119' },
+  
+  // Police Stations - Westmoreland
+  { id: 'ps28', type: 'police', name: 'Savanna-la-Mar Police Station', location: [18.2189, -78.1322], status: 'available', contact: '119' },
+  { id: 'ps29', type: 'police', name: 'Negril Police Station', location: [18.2678, -78.3495], status: 'available', contact: '119' },
+  
+  // Police Stations - Hanover
+  { id: 'ps30', type: 'police', name: 'Lucea Police Station', location: [18.4508, -78.1736], status: 'available', contact: '119' },
+  
+  // Police Stations - St. Elizabeth
+  { id: 'ps31', type: 'police', name: 'Black River Police Station', location: [18.0261, -77.8497], status: 'available', contact: '119' },
+  { id: 'ps32', type: 'police', name: 'Santa Cruz Police Station', location: [18.0836, -77.9378], status: 'available', contact: '119' },
+  
+  // Police Stations - St. Mary
+  { id: 'ps33', type: 'police', name: 'Port Maria Police Station', location: [18.3681, -76.8900], status: 'available', contact: '119' },
+  { id: 'ps34', type: 'police', name: 'Annotto Bay Police Station', location: [18.2725, -76.7692], status: 'available', contact: '119' },
+
+  // Fire Stations - Kingston & St. Andrew
+  { id: 'fs1', type: 'fire', name: 'York Park Fire Station', location: [17.9970, -76.7936], status: 'available', contact: '110' },
+  { id: 'fs2', type: 'fire', name: 'Half Way Tree Fire Station', location: [18.0131, -76.7975], status: 'available', contact: '110' },
+  { id: 'fs3', type: 'fire', name: 'Rollington Town Fire Station', location: [17.9883, -76.7744], status: 'available', contact: '110' },
+  { id: 'fs4', type: 'fire', name: 'Stony Hill Fire Station', location: [18.0764, -76.8142], status: 'available', contact: '110' },
+  
+  // Fire Stations - St. Catherine
+  { id: 'fs5', type: 'fire', name: 'Spanish Town Fire Station', location: [17.9939, -76.9561], status: 'available', contact: '110' },
+  { id: 'fs6', type: 'fire', name: 'Portmore Fire Station', location: [17.9550, -76.8869], status: 'available', contact: '110' },
+  { id: 'fs7', type: 'fire', name: 'Old Harbour Fire Station', location: [17.9425, -77.1075], status: 'available', contact: '110' },
+  
+  // Fire Stations - St. James
+  { id: 'fs8', type: 'fire', name: 'Montego Bay Fire Station', location: [18.4742, -77.8967], status: 'available', contact: '110' },
+  { id: 'fs9', type: 'fire', name: 'Ironshore Fire Station', location: [18.4583, -77.8528], status: 'available', contact: '110' },
+  
+  // Fire Stations - St. Ann
+  { id: 'fs10', type: 'fire', name: 'Ocho Rios Fire Station', location: [18.4069, -77.1044], status: 'available', contact: '110' },
+  { id: 'fs11', type: 'fire', name: 'St. Ann\'s Bay Fire Station', location: [18.4367, -77.2019], status: 'available', contact: '110' },
+  
+  // Fire Stations - Manchester
+  { id: 'fs12', type: 'fire', name: 'Mandeville Fire Station', location: [18.0406, -77.5042], status: 'available', contact: '110' },
+  
+  // Fire Stations - Clarendon
+  { id: 'fs13', type: 'fire', name: 'May Pen Fire Station', location: [17.9656, -77.2433], status: 'available', contact: '110' },
+  
+  // Fire Stations - Portland
+  { id: 'fs14', type: 'fire', name: 'Port Antonio Fire Station', location: [18.1789, -76.4500], status: 'available', contact: '110' },
+  
+  // Fire Stations - St. Thomas
+  { id: 'fs15', type: 'fire', name: 'Morant Bay Fire Station', location: [17.8822, -76.4086], status: 'available', contact: '110' },
+  
+  // Fire Stations - Trelawny
+  { id: 'fs16', type: 'fire', name: 'Falmouth Fire Station', location: [18.4917, -77.6550], status: 'available', contact: '110' },
+  
+  // Fire Stations - Westmoreland
+  { id: 'fs17', type: 'fire', name: 'Savanna-la-Mar Fire Station', location: [18.2197, -78.1314], status: 'available', contact: '110' },
+  { id: 'fs18', type: 'fire', name: 'Negril Fire Station', location: [18.2686, -78.3503], status: 'available', contact: '110' },
+  
+  // Fire Stations - Hanover
+  { id: 'fs19', type: 'fire', name: 'Lucea Fire Station', location: [18.4500, -78.1728], status: 'available', contact: '110' },
+  
+  // Fire Stations - St. Elizabeth
+  { id: 'fs20', type: 'fire', name: 'Black River Fire Station', location: [18.0269, -77.8489], status: 'available', contact: '110' },
+  
+  // Fire Stations - St. Mary
+  { id: 'fs21', type: 'fire', name: 'Port Maria Fire Station', location: [18.3689, -76.8908], status: 'available', contact: '110' },
+
+  // Hospitals - Kingston & St. Andrew
+  { id: 'h1', type: 'medical', name: 'Kingston Public Hospital', location: [17.9686, -76.7856], status: 'available', contact: '110' },
+  { id: 'h2', type: 'medical', name: 'University Hospital of the West Indies', location: [18.0047, -76.7472], status: 'available', contact: '927-1620' },
+  { id: 'h3', type: 'medical', name: 'Bustamante Hospital for Children', location: [17.9697, -76.7881], status: 'available', contact: '948-3311' },
+  { id: 'h4', type: 'medical', name: 'National Chest Hospital', location: [17.9706, -76.7878], status: 'available', contact: '948-5601' },
+  { id: 'h5', type: 'medical', name: 'Sir John Golding Rehabilitation Centre', location: [18.0064, -76.7464], status: 'available', contact: '927-1680' },
+  { id: 'h6', type: 'medical', name: 'Andrews Memorial Hospital', location: [18.0156, -76.7917], status: 'available', contact: '926-7401' },
+  { id: 'h7', type: 'medical', name: 'Nuttall Memorial Hospital', location: [18.0153, -76.7881], status: 'available', contact: '926-2139' },
+  { id: 'h8', type: 'medical', name: 'Medical Associates Hospital', location: [18.0108, -76.7950], status: 'available', contact: '926-1400' },
+  { id: 'h9', type: 'medical', name: 'Tony Thwaites Wing (UWI)', location: [18.0042, -76.7456], status: 'available', contact: '927-1214' },
+  
+  // Hospitals - St. Catherine
+  { id: 'h10', type: 'medical', name: 'Spanish Town Hospital', location: [17.9919, -76.9539], status: 'available', contact: '984-3331' },
+  { id: 'h11', type: 'medical', name: 'St. Jago Park Hospital', location: [17.9947, -76.9503], status: 'available', contact: '749-6841' },
+  { id: 'h12', type: 'medical', name: 'Linstead Hospital', location: [18.1361, -77.0317], status: 'available', contact: '985-2221' },
+  { id: 'h13', type: 'medical', name: 'May Pen Hospital', location: [17.9658, -77.2456], status: 'available', contact: '986-2252' },
+  
+  // Hospitals - St. James
+  { id: 'h14', type: 'medical', name: 'Cornwall Regional Hospital', location: [18.4717, -77.9189], status: 'available', contact: '952-5100' },
+  { id: 'h15', type: 'medical', name: 'Hospiten Montego Bay', location: [18.4856, -77.9133], status: 'available', contact: '953-3649' },
+  { id: 'h16', type: 'medical', name: 'Fairview Medical Centre', location: [18.4797, -77.8942], status: 'available', contact: '952-9450' },
+  
+  // Hospitals - St. Ann
+  { id: 'h17', type: 'medical', name: 'St. Ann\'s Bay Regional Hospital', location: [18.4372, -77.2006], status: 'available', contact: '972-2272' },
+  { id: 'h18', type: 'medical', name: 'Port Antonio Hospital', location: [18.1792, -76.4497], status: 'available', contact: '993-2646' },
+  
+  // Hospitals - Manchester
+  { id: 'h19', type: 'medical', name: 'Mandeville Regional Hospital', location: [18.0425, -77.5033], status: 'available', contact: '962-2067' },
+  { id: 'h20', type: 'medical', name: 'Hargreaves Memorial Hospital', location: [18.0428, -77.5025], status: 'available', contact: '962-2243' },
+  
+  // Hospitals - Clarendon
+  { id: 'h21', type: 'medical', name: 'Lionel Town Hospital', location: [17.8242, -77.2361], status: 'available', contact: '986-2122' },
+  { id: 'h22', type: 'medical', name: 'Chapelton Hospital', location: [18.1167, -77.2167], status: 'available', contact: '986-3110' },
+  
+  // Hospitals - Portland
+  { id: 'h23', type: 'medical', name: 'Buff Bay Hospital', location: [18.1861, -76.6747], status: 'available', contact: '996-1027' },
+  
+  // Hospitals - St. Thomas
+  { id: 'h24', type: 'medical', name: 'Princess Margaret Hospital', location: [17.8828, -76.4083], status: 'available', contact: '982-2126' },
+  
+  // Hospitals - Trelawny
+  { id: 'h25', type: 'medical', name: 'Falmouth Hospital', location: [18.4933, -77.6536], status: 'available', contact: '954-3326' },
+  
+  // Hospitals - Westmoreland
+  { id: 'h26', type: 'medical', name: 'Savanna-la-Mar Hospital', location: [18.2203, -78.1328], status: 'available', contact: '955-2532' },
+  { id: 'h27', type: 'medical', name: 'Negril Health Centre', location: [18.2672, -78.3511], status: 'available', contact: '957-4926' },
+  
+  // Hospitals - Hanover
+  { id: 'h28', type: 'medical', name: 'Noel Holmes Hospital', location: [18.4514, -78.1731], status: 'available', contact: '956-2233' },
+  
+  // Hospitals - St. Elizabeth
+  { id: 'h29', type: 'medical', name: 'Black River Hospital', location: [18.0267, -77.8492], status: 'available', contact: '965-2212' },
+  { id: 'h30', type: 'medical', name: 'Lacovia Hospital', location: [18.0997, -77.8072], status: 'available', contact: '966-2326' },
+  
+  // Hospitals - St. Mary
+  { id: 'h31', type: 'medical', name: 'Port Maria Hospital', location: [18.3697, -76.8889], status: 'available', contact: '994-2221' },
+  { id: 'h32', type: 'medical', name: 'Annotto Bay Hospital', location: [18.2731, -76.7686], status: 'available', contact: '996-2223' },
+];
+
 // Main Map Component
 export default function InteractiveCrimeMap() {
-  const [crimes, setCrimes] = useState<CrimeReport[]>([
-    {
-      id: '1',
-      type: 'theft',
-      severity: 'medium',
-      location: [18.0019, -76.7942],
-      description: 'Car break-in reported in downtown Kingston',
-      timestamp: new Date(),
-      status: 'active',
-      reporter: 'John Brown'
-    },
-    {
-      id: '2',
-      type: 'assault',
-      severity: 'high',
-      location: [18.0123, -76.7891],
-      description: 'Physical altercation in progress near Half Way Tree',
-      timestamp: new Date(Date.now() - 3600000),
-      status: 'investigating',
-      reporter: 'Jane Williams'
-    },
-    {
-      id: '3',
-      type: 'vandalism',
-      severity: 'low',
-      location: [17.9961, -76.9547],
-      description: 'Graffiti reported in Spanish Town',
-      timestamp: new Date(Date.now() - 7200000),
-      status: 'active',
-      reporter: 'Mike Johnson'
-    }
-  ]);
-
-  const [emergencyServices, setEmergencyServices] = useState<EmergencyService[]>([
-    {
-      id: '1',
-      type: 'police',
-      name: 'Jamaica Police Station',
-      location: [18.0019, -76.7942],
-      status: 'available',
-      contact: '119'
-    },
-    {
-      id: '2',
-      type: 'police',
-      name: 'Half Way Tree Police Station',
-      location: [18.0123, -76.7891],
-      status: 'busy',
-      contact: '110'
-    },
-    {
-      id: '3',
-      type: 'police',
-      name: 'Spanish Town Police Station',
-      location: [17.9961, -76.9547],
-      status: 'available',
-      contact: '119'
-    },
-    {
-      id: '4',
-      type: 'fire',
-      name: 'Jamaica Fire Station',
-      location: [18.0019, -76.7942],
-      status: 'available',
-      contact: '110'
-    },
-    {
-      id: '5',
-      type: 'fire',
-      name: 'Kingston Fire Station',
-      location: [17.9970, -76.7936],
-      status: 'available',
-      contact: '110'
-    }
-  ]);
-
-  const [alertZones, setAlertZones] = useState<AlertZone[]>([
-    {
-      id: '1',
-      name: 'Downtown Kingston High Crime Area',
-      center: [18.0019, -76.7942],
-      radius: 800,
-      level: 'high',
-      description: 'Increased criminal activity reported in downtown Kingston',
-      active: true
-    },
-    {
-      id: '2',
-      name: 'Spanish Town Alert Zone',
-      center: [17.9961, -76.9547],
-      radius: 600,
-      level: 'medium',
-      description: 'Moderate crime activity in Spanish Town area',
-      active: true
-    }
-  ]);
+  // Fetch crime reports from Convex
+  const crimeReports = useQuery(api.crimeReports.list, {});
+  
+  const [crimeMarkers, setCrimeMarkers] = useState<MapCrimeMarker[]>([]);
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   const [showReportForm, setShowReportForm] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<[number, number] | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [filters, setFilters] = useState({
     showCrimes: true,
-    showServices: true,
-    showAlerts: true,
+    showPolice: true,
+    showFire: true,
+    showHospitals: true,
     showCrimeRadius: true,
     crimeSeverity: 'all' as 'all' | 'low' | 'medium' | 'high' | 'critical'
   });
+
+  // Process crime reports and geocode addresses
+  useEffect(() => {
+    if (!crimeReports) return;
+
+    const processReports = async () => {
+      setIsGeocoding(true);
+      const markers: MapCrimeMarker[] = [];
+
+      for (const report of crimeReports) {
+        let lat = report.locationLat;
+        let lng = report.locationLng;
+
+        // If coordinates don't exist, geocode the address
+        if (!lat || !lng) {
+          const geocodeResult = await geocodeFullAddress({
+            incidentAddress: report.incidentAddress,
+            neighborhood: report.neighborhood,
+            cityState: report.cityState,
+            county: report.county,
+          });
+
+          if (geocodeResult) {
+            lat = geocodeResult.lat;
+            lng = geocodeResult.lng;
+          }
+        }
+
+        // Only add markers that have valid coordinates
+        if (lat && lng) {
+          // Determine severity based on offense type and flags
+          let severity: 'low' | 'medium' | 'high' | 'critical' = 'medium';
+          
+          if (report.weaponsInvolved || report.offenseType.toLowerCase().includes('murder') || 
+              report.offenseType.toLowerCase().includes('assault')) {
+            severity = 'critical';
+          } else if (report.offenseType.toLowerCase().includes('robbery') || 
+                     report.offenseType.toLowerCase().includes('burglary') ||
+                     report.drugsInvolved) {
+            severity = 'high';
+          } else if (report.offenseType.toLowerCase().includes('theft') || 
+                     report.offenseType.toLowerCase().includes('vandalism')) {
+            severity = 'low';
+          }
+
+          markers.push({
+            id: report._id,
+            location: [lat, lng],
+            offenseType: report.offenseType,
+            description: report.description,
+            cityState: report.cityState,
+            status: report.status,
+            createdAt: report.createdAt,
+            criminalName: report.criminalName,
+            severity,
+          });
+        }
+      }
+
+      setCrimeMarkers(markers);
+      setIsGeocoding(false);
+    };
+
+    processReports();
+  }, [crimeReports]);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     setSelectedLocation([lat, lng]);
     setShowReportForm(true);
   }, []);
 
-  const handleCrimeReport = (reportData: Omit<CrimeReport, 'id' | 'timestamp'>) => {
-    const newCrime: CrimeReport = {
-      ...reportData,
-      id: Date.now().toString(),
-      timestamp: new Date()
-    };
-    setCrimes(prev => [...prev, newCrime]);
-    setShowReportForm(false);
-    setSelectedLocation(null);
-  };
-
   const getCrimeColor = (severity: string) => {
     switch (severity) {
-      case 'low': return '#22c55e';
-      case 'medium': return '#f59e0b';
-      case 'high': return '#ef4444';
-      case 'critical': return '#dc2626';
-      default: return '#6b7280';
-    }
-  };
-
-  const getAlertColor = (level: string) => {
-    switch (level) {
       case 'low': return '#22c55e';
       case 'medium': return '#f59e0b';
       case 'high': return '#ef4444';
@@ -284,20 +420,29 @@ export default function InteractiveCrimeMap() {
             <label className="flex items-center">
               <input
                 type="checkbox"
-                checked={filters.showServices}
-                onChange={(e) => setFilters(prev => ({ ...prev, showServices: e.target.checked }))}
+                checked={filters.showPolice}
+                onChange={(e) => setFilters(prev => ({ ...prev, showPolice: e.target.checked }))}
                 className="mr-2"
               />
-              Show Emergency Services
+              👮 Show Police Stations
             </label>
             <label className="flex items-center">
               <input
                 type="checkbox"
-                checked={filters.showAlerts}
-                onChange={(e) => setFilters(prev => ({ ...prev, showAlerts: e.target.checked }))}
+                checked={filters.showFire}
+                onChange={(e) => setFilters(prev => ({ ...prev, showFire: e.target.checked }))}
                 className="mr-2"
               />
-              Show Alert Zones
+              🚒 Show Fire Stations
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={filters.showHospitals}
+                onChange={(e) => setFilters(prev => ({ ...prev, showHospitals: e.target.checked }))}
+                className="mr-2"
+              />
+              🏥 Show Hospitals
             </label>
             <label className="flex items-center">
               <input
@@ -334,29 +479,34 @@ export default function InteractiveCrimeMap() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-red-50 p-3 rounded">
               <div className="text-2xl font-bold text-red-600">
-                {crimes.filter(c => c.status === 'active').length}
+                {crimeMarkers.filter(c => c.status === 'active').length}
               </div>
               <div className="text-sm text-red-600">Active Crimes</div>
             </div>
             <div className="bg-blue-50 p-3 rounded">
               <div className="text-2xl font-bold text-blue-600">
-                {emergencyServices.filter(s => s.status === 'available').length}
+                {JAMAICA_EMERGENCY_SERVICES.filter(s => s.type === 'police').length}
               </div>
-              <div className="text-sm text-blue-600">Available Units</div>
+              <div className="text-sm text-blue-600">Police Stations</div>
             </div>
-            <div className="bg-yellow-50 p-3 rounded">
-              <div className="text-2xl font-bold text-yellow-600">
-                {alertZones.filter(z => z.active).length}
+            <div className="bg-orange-50 p-3 rounded">
+              <div className="text-2xl font-bold text-orange-600">
+                {JAMAICA_EMERGENCY_SERVICES.filter(s => s.type === 'fire').length}
               </div>
-              <div className="text-sm text-yellow-600">Alert Zones</div>
+              <div className="text-sm text-orange-600">Fire Stations</div>
             </div>
-            <div className="bg-green-50 p-3 rounded">
-              <div className="text-2xl font-bold text-green-600">
-                {crimes.filter(c => c.status === 'resolved').length}
+            <div className="bg-emerald-50 p-3 rounded">
+              <div className="text-2xl font-bold text-emerald-600">
+                {JAMAICA_EMERGENCY_SERVICES.filter(s => s.type === 'medical').length}
               </div>
-              <div className="text-sm text-green-600">Resolved</div>
+              <div className="text-sm text-emerald-600">Hospitals</div>
             </div>
           </div>
+          {isGeocoding && (
+            <div className="mt-2 text-sm text-gray-500 italic">
+              Loading locations...
+            </div>
+          )}
         </div>
 
         {/* Recent Crimes */}
@@ -366,13 +516,13 @@ export default function InteractiveCrimeMap() {
             Recent Crimes
           </h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {crimes.slice(0, 5).map(crime => (
+            {crimeMarkers.slice(0, 5).map(crime => (
               <div key={crime.id} className="p-3 bg-gray-50 rounded border-l-4" 
                    style={{ borderLeftColor: getCrimeColor(crime.severity) }}>
-                <div className="font-medium capitalize">{crime.type}</div>
-                <div className="text-sm text-gray-600">{crime.description}</div>
+                <div className="font-medium capitalize">{crime.offenseType}</div>
+                <div className="text-sm text-gray-600">{crime.description.substring(0, 60)}...</div>
                 <div className="text-xs text-gray-500">
-                  {format(crime.timestamp, 'MMM dd, HH:mm')} • {crime.severity}
+                  {format(new Date(crime.createdAt), 'MMM dd, HH:mm')} • {crime.severity}
                 </div>
               </div>
             ))}
@@ -399,8 +549,8 @@ export default function InteractiveCrimeMap() {
               <span>🚒 Fire Stations</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
-              <span>⚠️ Alert Zones</span>
+              <div className="w-4 h-4 bg-emerald-500 rounded-full mr-2"></div>
+              <span>🏥 Hospitals</span>
             </div>
             <div className="flex items-center">
               <div className="w-4 h-4 bg-gray-300 rounded-full mr-2 border-2 border-gray-500"></div>
@@ -419,9 +569,9 @@ export default function InteractiveCrimeMap() {
           {showAnalytics ? <ChevronUp className="w-5 h-5 ml-2" /> : <ChevronDown className="w-5 h-5 ml-2" />}
         </button>
 
-        {/* Report Button */}
+        {/* Report Button - Use main report form */}
         <button
-          onClick={() => setShowReportForm(true)}
+          onClick={() => window.location.href = '/'}
           className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -444,7 +594,7 @@ export default function InteractiveCrimeMap() {
           <MapClickHandler onMapClick={handleMapClick} />
 
           {/* Crime Markers */}
-          {filters.showCrimes && crimes
+          {filters.showCrimes && crimeMarkers
             .filter(crime => filters.crimeSeverity === 'all' || crime.severity === filters.crimeSeverity)
             .map(crime => (
             <Marker
@@ -454,8 +604,8 @@ export default function InteractiveCrimeMap() {
             >
               <Tooltip direction="top" offset={[0, -10]} opacity={1}>
                 <div className="text-center">
-                  <div className="font-bold text-sm capitalize text-red-600">{crime.type}</div>
-                  <div className="text-xs text-gray-600">{crime.description}</div>
+                  <div className="font-bold text-sm capitalize text-red-600">{crime.offenseType}</div>
+                  <div className="text-xs text-gray-600">{crime.description.substring(0, 50)}...</div>
                   <div className="text-xs">
                     <span className="font-medium" style={{ color: getCrimeColor(crime.severity) }}>
                       {crime.severity}
@@ -465,56 +615,99 @@ export default function InteractiveCrimeMap() {
               </Tooltip>
               <Popup>
                 <div className="p-2">
-                  <h3 className="font-bold capitalize text-red-600">{crime.type}</h3>
+                  <h3 className="font-bold capitalize text-red-600">{crime.offenseType}</h3>
+                  {crime.criminalName && <p className="text-sm font-medium">Suspect: {crime.criminalName}</p>}
                   <p className="text-sm">{crime.description}</p>
                   <div className="text-xs text-gray-500 mt-2">
                     <div>Severity: <span className="font-medium" style={{ color: getCrimeColor(crime.severity) }}>
                       {crime.severity}
                     </span></div>
                     <div>Status: {crime.status}</div>
-                    <div>Time: {format(crime.timestamp, 'MMM dd, HH:mm')}</div>
-                    {crime.reporter && <div>Reporter: {crime.reporter}</div>}
+                    <div>Location: {crime.cityState}</div>
+                    <div>Time: {format(new Date(crime.createdAt), 'MMM dd, HH:mm')}</div>
                   </div>
                 </div>
               </Popup>
             </Marker>
           ))}
 
-          {/* Emergency Services */}
-          {filters.showServices && emergencyServices.map(service => (
+          {/* Police Stations */}
+          {filters.showPolice && JAMAICA_EMERGENCY_SERVICES
+            .filter(service => service.type === 'police')
+            .map(service => (
             <Marker
               key={service.id}
               position={service.location}
-              icon={service.type === 'police' ? policeIcon : fireIcon}
+              icon={policeIcon}
             >
               <Tooltip direction="top" offset={[0, -10]} opacity={1}>
                 <div className="text-center">
                   <div className="font-bold text-sm">{service.name}</div>
-                  <div className="text-xs">
-                    Status: <span className={`font-medium ${
-                      service.status === 'available' ? 'text-green-600' : 
-                      service.status === 'busy' ? 'text-yellow-600' : 'text-red-600'
-                    }`}>{service.status}</span>
-                  </div>
-                  <div className="text-xs text-gray-600">{service.contact}</div>
+                  <div className="text-xs text-gray-600">📞 {service.contact}</div>
                 </div>
               </Tooltip>
               <Popup>
                 <div className="p-2">
-                  <h3 className="font-bold text-blue-600">{service.name}</h3>
-                  <p className="text-sm">Type: {service.type}</p>
-                  <p className="text-sm">Status: <span className={`font-medium ${
-                    service.status === 'available' ? 'text-green-600' : 
-                    service.status === 'busy' ? 'text-yellow-600' : 'text-red-600'
-                  }`}>{service.status}</span></p>
-                  <p className="text-sm">Contact: {service.contact}</p>
+                  <h3 className="font-bold text-blue-600">👮 {service.name}</h3>
+                  <p className="text-sm">Type: Police Station</p>
+                  <p className="text-sm">Emergency Contact: <span className="font-medium text-blue-600">{service.contact}</span></p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+
+          {/* Fire Stations */}
+          {filters.showFire && JAMAICA_EMERGENCY_SERVICES
+            .filter(service => service.type === 'fire')
+            .map(service => (
+            <Marker
+              key={service.id}
+              position={service.location}
+              icon={fireIcon}
+            >
+              <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+                <div className="text-center">
+                  <div className="font-bold text-sm">{service.name}</div>
+                  <div className="text-xs text-gray-600">📞 {service.contact}</div>
+                </div>
+              </Tooltip>
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-bold text-red-600">🚒 {service.name}</h3>
+                  <p className="text-sm">Type: Fire Station</p>
+                  <p className="text-sm">Emergency Contact: <span className="font-medium text-red-600">{service.contact}</span></p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+
+          {/* Hospitals */}
+          {filters.showHospitals && JAMAICA_EMERGENCY_SERVICES
+            .filter(service => service.type === 'medical')
+            .map(service => (
+            <Marker
+              key={service.id}
+              position={service.location}
+              icon={hospitalIcon}
+            >
+              <Tooltip direction="top" offset={[0, -10]} opacity={1}>
+                <div className="text-center">
+                  <div className="font-bold text-sm">{service.name}</div>
+                  <div className="text-xs text-gray-600">📞 {service.contact}</div>
+                </div>
+              </Tooltip>
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-bold text-emerald-600">🏥 {service.name}</h3>
+                  <p className="text-sm">Type: Hospital / Medical Facility</p>
+                  <p className="text-sm">Contact: <span className="font-medium text-emerald-600">{service.contact}</span></p>
                 </div>
               </Popup>
             </Marker>
           ))}
 
           {/* Crime Radius Circles (30km) */}
-          {filters.showCrimeRadius && crimes
+          {filters.showCrimeRadius && crimeMarkers
             .filter(crime => crime.status === 'active')
             .map(crime => (
             <Circle
@@ -531,48 +724,44 @@ export default function InteractiveCrimeMap() {
             />
           ))}
 
-          {/* Alert Zones */}
-          {filters.showAlerts && alertZones.filter(zone => zone.active).map(zone => (
-            <Circle
-              key={zone.id}
-              center={zone.center}
-              radius={zone.radius}
-              pathOptions={{
-                color: getAlertColor(zone.level),
-                fillColor: getAlertColor(zone.level),
-                fillOpacity: 0.2,
-                weight: 2
-              }}
-            />
-          ))}
         </MapContainer>
 
-        {/* Crime Report Form Modal */}
-        {showReportForm && (
+        {/* Crime Report Form Modal - Disabled for now, use main report form instead */}
+        {/* {showReportForm && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-96 max-h-96 overflow-y-auto">
               <h2 className="text-xl font-bold mb-4">Report a Crime</h2>
-              <CrimeReportForm
-                location={selectedLocation}
-                onSubmit={handleCrimeReport}
-                onCancel={() => {
+              <p className="text-sm text-gray-600">Please use the main crime report form to submit reports.</p>
+              <button
+                onClick={() => {
                   setShowReportForm(false);
                   setSelectedLocation(null);
                 }}
-              />
+                className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+              >
+                Close
+              </button>
             </div>
           </div>
-        )}
+        )} */}
         </div>
       </div>
 
       {/* Analytics Section */}
-      {showAnalytics && (
+      {showAnalytics && crimeMarkers.length > 0 && (
         <div className="h-96 overflow-y-auto border-t">
           <Analytics 
-            crimes={crimes} 
-            emergencyServices={emergencyServices} 
-            alertZones={alertZones} 
+            crimes={crimeMarkers.map(marker => ({
+              id: marker.id,
+              type: marker.offenseType as any,
+              severity: marker.severity,
+              location: marker.location,
+              description: marker.description,
+              timestamp: new Date(marker.createdAt),
+              status: marker.status as any,
+            }))} 
+            emergencyServices={JAMAICA_EMERGENCY_SERVICES} 
+            alertZones={[]} 
           />
         </div>
       )}
@@ -580,110 +769,4 @@ export default function InteractiveCrimeMap() {
   );
 }
 
-// Crime Report Form Component
-function CrimeReportForm({ 
-  location, 
-  onSubmit, 
-  onCancel 
-}: { 
-  location: [number, number] | null;
-  onSubmit: (data: Omit<CrimeReport, 'id' | 'timestamp'>) => void;
-  onCancel: () => void;
-}) {
-  const [formData, setFormData] = useState({
-    type: 'theft' as CrimeReport['type'],
-    severity: 'medium' as CrimeReport['severity'],
-    description: '',
-    reporter: ''
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (location) {
-      onSubmit({
-        ...formData,
-        location,
-        status: 'active'
-      });
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Crime Type:</label>
-        <select
-          value={formData.type}
-          onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
-          className="w-full p-2 border rounded"
-          required
-        >
-          <option value="theft">Theft</option>
-          <option value="assault">Assault</option>
-          <option value="vandalism">Vandalism</option>
-          <option value="burglary">Burglary</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">Severity:</label>
-        <select
-          value={formData.severity}
-          onChange={(e) => setFormData(prev => ({ ...prev, severity: e.target.value as any }))}
-          className="w-full p-2 border rounded"
-          required
-        >
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="critical">Critical</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">Description:</label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-          className="w-full p-2 border rounded h-20"
-          placeholder="Describe what happened..."
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">Your Name (Optional):</label>
-        <input
-          type="text"
-          value={formData.reporter}
-          onChange={(e) => setFormData(prev => ({ ...prev, reporter: e.target.value }))}
-          className="w-full p-2 border rounded"
-          placeholder="Enter your name"
-        />
-      </div>
-
-      {location && (
-        <div className="text-sm text-gray-600">
-          Location: {location[0].toFixed(4)}, {location[1].toFixed(4)}
-        </div>
-      )}
-
-      <div className="flex space-x-3">
-        <button
-          type="submit"
-          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-        >
-          Submit Report
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
-}
+// Crime Report Form Component - Removed, use main report form instead
