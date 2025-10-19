@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin, Calendar, AlertTriangle } from "lucide-react"
+import { Search, MapPin, Calendar, AlertTriangle, Filter } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
 export default function DatabasePage() {
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState(search)
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search), 300)
@@ -31,24 +32,37 @@ export default function DatabasePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-balance text-4xl font-bold tracking-tight">Criminal Database</h1>
-        <p className="mt-3 text-pretty text-lg text-muted-foreground leading-relaxed">
-          Search our database of wanted criminals. If you have information, please report it.
-        </p>
-      </div>
-
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, crime, or description..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-12 shadow-depth-sm"
-          />
+      <div className="mb-8 space-y-4">
+        <div>
+          <h1 className="text-balance text-4xl font-bold tracking-tight">Criminal Database</h1>
+          <p className="mt-3 text-pretty text-lg text-muted-foreground leading-relaxed">
+            Search our database of wanted criminals. If you have information, please report it.
+          </p>
+        </div>
+        <div>
+          <Button
+            variant={showFilters ? "secondary" : "outline"}
+            onClick={() => setShowFilters((value) => !value)}
+          >
+            <Filter className="mr-2 h-4 w-4" />
+            {showFilters ? "Hide filters" : "Advanced filters"}
+          </Button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, crime, or description..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 h-12 shadow-depth-sm"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {criminals === undefined ? (
