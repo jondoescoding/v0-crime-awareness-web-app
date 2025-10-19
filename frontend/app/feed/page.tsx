@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MapPin, Clock, AlertTriangle, CheckCircle, User, Car, Shield, Calendar, Link as LinkIcon, Filter, Loader2 } from "lucide-react"
+import { MapPin, Clock, AlertTriangle, CheckCircle, User, Car, Shield, Calendar, Link as LinkIcon, Filter, Loader2, FileText } from "lucide-react"
 import type { Id } from "@/convex/_generated/dataModel"
+import { useToast } from "@/hooks/use-toast"
 
 const jamaicanParishes = [
   "Clarendon",
@@ -69,6 +70,8 @@ export default function FeedPage() {
     parish: selectedParish 
   })
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
+  const { toast } = useToast()
 
   // Keep showing the last results while new data loads so only the activity list updates
   const [lastReports, setLastReports] = useState<Array<Report> | null>(null)
@@ -113,13 +116,65 @@ export default function FeedPage() {
     })
   }
 
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true)
+    try {
+      const response = await fetch("http://localhost:8000/reports/daily", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to generate report")
+      }
+
+      toast({
+        title: "Report Generated",
+        description: "24-hour crime intelligence report has been sent to all recipients.",
+      })
+    } catch (error) {
+      console.error("Error generating report:", error)
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingReport(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-balance text-4xl font-bold tracking-tight">Activity Feed</h1>
-        <p className="mt-3 text-pretty text-lg text-muted-foreground leading-relaxed">
-          Real-time updates on criminal activity and investigations in your area
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-balance text-4xl font-bold tracking-tight">Activity Feed</h1>
+            <p className="mt-3 text-pretty text-lg text-muted-foreground leading-relaxed">
+              Real-time updates on criminal activity and investigations in your area
+            </p>
+          </div>
+          <Button 
+            onClick={handleGenerateReport} 
+            disabled={isGeneratingReport}
+            className="shrink-0"
+            size="lg"
+          >
+            {isGeneratingReport ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileText className="mr-2 h-4 w-4" />
+                Generate 24h Report
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Filter Section */}
