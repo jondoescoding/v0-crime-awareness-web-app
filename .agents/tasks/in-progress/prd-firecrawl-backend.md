@@ -91,14 +91,13 @@ MissingPerson:
 - **API Key Leakage**: Keep secrets in `.env` or secret manager; do not hardcode.
 
 ## 11. Open Questions
-- Preferred persistence layer (database vs. flat file) for MVP?
-- Authentication requirements for manual scrape endpoint?
-- Should we store historical snapshots or only the latest state?
-- Expected deployment schedule and hosting environment?
+- [ ] Preferred persistence layer (database vs. flat file) for MVP?
+- [ ] Authentication requirements for manual scrape endpoint?
+- [ ] Should we store historical snapshots or only the latest state?
+- [ ] Expected deployment schedule and hosting environment?
 
 ## 12. Milestones
-1. **Discovery (1-2 days)**: Confirm schema, legal compliance, storage choice.
-2. **MVP Implementation (4-6 days)**: Build scraper, storage integration, GET endpoint.
-3. **Hardening (2 days)**: Add manual trigger, observability, error handling.
-4. **Testing & Launch (1 day)**: End-to-end verification, documentation, deployment readiness.
-
+1. **Discovery (1-2 days)**: Confirm schema, legal compliance, storage choice. → _Partially completed (schema confirmed; legal/storage decisions pending)._
+2. **MVP Implementation (4-6 days)**: Build scraper, storage integration, GET endpoint. → _In progress (scraper + GET endpoint complete; persistence pending)._
+3. **Hardening (2 days)**: Add manual trigger, observability, error handling. → _In progress (manual trigger + logging done; observability backlog)._
+4. **Testing & Launch (1 day)**: End-to-end verification, documentation, deployment readiness. → _Not started (needs integration tests, deployment checklist)._
