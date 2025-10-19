@@ -8,6 +8,7 @@ export const list = query({
   args: {
     status: v.optional(v.string()),
     offenseType: v.optional(v.string()),
+    parish: v.optional(v.string()),
   },
   returns: v.array(
     v.object({
@@ -57,6 +58,12 @@ export const list = query({
       reports = await ctx.db
         .query("crimeReports")
         .withIndex("by_offenseType", (q) => q.eq("offenseType", args.offenseType!))
+        .order("desc")
+        .collect();
+    } else if (args.parish) {
+      reports = await ctx.db
+        .query("crimeReports")
+        .withIndex("by_parish", (q) => q.eq("parish", args.parish!))
         .order("desc")
         .collect();
     } else {
