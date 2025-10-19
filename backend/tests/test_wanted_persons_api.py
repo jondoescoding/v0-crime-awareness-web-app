@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
 from api import create_app
 from api.wanted_persons import get_scraper_dependency
-from core import override_settings, reset_settings
 from models import WantedPersonsPayload
-from services.wanted_persons_storage import save_wanted_persons
 
 
 def _sample_payload(scraped_at: datetime | None = None) -> WantedPersonsPayload:
@@ -50,21 +48,17 @@ def _sample_payload(scraped_at: datetime | None = None) -> WantedPersonsPayload:
 
 
 @pytest.fixture()
-def client(tmp_path: Path) -> TestClient:
-    payload = _sample_payload()
-    data_path = tmp_path / "wanted_persons.json"
-    override_settings(
-        wanted_persons_data_path=str(data_path),
-        wanted_persons_source_url=str(payload.source_url),
-        default_scrape_timestamp=payload.scraped_at.isoformat(),
-        firecrawl_api_key=None,
-    )
-    save_wanted_persons(payload)
+def client() -> TestClient:
+    holder: dict[str, WantedPersonsPayload] = {"payload": _sample_payload()}
+
+    def scraper() -> WantedPersonsPayload:
+        return holder["payload"]
+
     app = create_app()
+    app.dependency_overrides[get_scraper_dependency] = lambda: scraper
     test_client = TestClient(app)
     yield test_client
     test_client.app.dependency_overrides = {}
-    reset_settings()
 
 
 def test_get_wanted_persons_returns_all_records(client: TestClient) -> None:
@@ -91,11 +85,10 @@ def test_get_wanted_persons_filters_by_alias(client: TestClient) -> None:
     assert records[0]["full_name"] == "Gaveen Hurd"
 
 
-def test_post_scrape_uses_dependency_override(client: TestClient, tmp_path: Path) -> None:
+def test_post_scrape_uses_dependency_override(client: TestClient) -> None:
     new_payload = _sample_payload(scraped_at=datetime.now(timezone.utc))
 
     def scraper() -> WantedPersonsPayload:
-        save_wanted_persons(new_payload)
         return new_payload
 
     client.app.dependency_overrides[get_scraper_dependency] = lambda: scraper
