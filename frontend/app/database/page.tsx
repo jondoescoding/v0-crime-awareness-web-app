@@ -61,7 +61,7 @@ export default function DatabasePage() {
                       <CardTitle className="text-lg">{criminal.name}</CardTitle>
                       <CardDescription className="text-sm">{criminal.primaryCrime}</CardDescription>
                     </div>
-                    <Badge variant={criminal.status === "Wanted" ? "destructive" : "secondary"} className="shrink-0">
+                    <Badge variant={criminal.status === "wanted" ? "destructive" : "secondary"} className="shrink-0">
                       {criminal.status}
                     </Badge>
                   </div>
@@ -109,7 +109,7 @@ export default function DatabasePage() {
                   <div className="flex-1 space-y-3">
                     <div>
                       <h3 className="font-semibold mb-1">Status</h3>
-                      <Badge variant={criminal.status === "Wanted" ? "destructive" : "secondary"}>
+                      <Badge variant={criminal.status === "wanted" ? "destructive" : "secondary"}>
                         {criminal.status}
                       </Badge>
                     </div>

@@ -1,227 +1,227 @@
 {
-  "id": "d33ec7af-9b73-4b78-9fe9-9615093dceca",
-  "startedAt": "2025-10-19T00:28:31.787Z",
-  "endedAt": "2025-10-19T00:28:32.196Z",
-  "endpoint": "extract",
-  "formState": {
-    "extractSetupCompleted": true,
-    "urls": [
-      "https://jcf.gov.jm/missing-person-3/missing-person-2/*"
-    ],
-    "extractSchema": {
-      "type": "object",
-      "required": [],
-      "properties": {
-        "criminals": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [],
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "alias": {
-                "type": "string"
-              },
-              "crimes": {
-                "type": "string"
-              },
-              "imageurl": {
-                "type": "string"
-              },
-              "location": {
-                "type": "string"
+    "id": "d33ec7af-9b73-4b78-9fe9-9615093dceca",
+    "startedAt": "2025-10-19T00:28:31.787Z",
+    "endedAt": "2025-10-19T00:28:32.196Z",
+    "endpoint": "extract",
+    "formState": {
+      "extractSetupCompleted": true,
+      "urls": [
+        "https://jcf.gov.jm/missing-person-3/missing-person-2/*"
+      ],
+      "extractSchema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "criminals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "alias": {
+                  "type": "string"
+                },
+                "crimes": {
+                  "type": "string"
+                },
+                "imageurl": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                }
               }
             }
           }
         }
-      }
-    },
-    "extractPrompt": "Extract the first name and last name, alias, crimes, image URL, and the wanted by location for each criminal. Ensure that the name is always included.",
-    "enableWebSearch": true,
-    "options": {
-      "onlyMainContent": false,
-      "parsePDF": true,
-      "stealthMode": false,
-      "excludeTags": [],
-      "includeTags": [],
-      "waitFor": "",
-      "timeout": "",
-      "maxAge": "2 days",
-      "ignoreSitemap": false,
-      "crawlEntireDomain": false,
-      "sitemap": "include",
-      "limit": "10",
-      "maxDepth": "",
-      "excludePaths": [],
-      "includePaths": [],
-      "includeSubdomains": false,
-      "search": "",
-      "scrapeContentFromSearchResults": true,
-      "timeBasedSearch": "",
-      "location": "",
-      "prompt": ""
-    },
-    "formats": [
-      "markdown"
-    ],
-    "sources": [
-      "web"
-    ],
-    "categories": [],
-    "jsonSchema": {
-      "type": "object",
-      "required": [],
-      "properties": {
-        "company_name": {
-          "type": "string"
-        },
-        "company_description": {
-          "type": "string"
+      },
+      "extractPrompt": "Extract the first name and last name, alias, crimes, image URL, and the wanted by location for each criminal. Ensure that the name is always included.",
+      "enableWebSearch": true,
+      "options": {
+        "onlyMainContent": false,
+        "parsePDF": true,
+        "stealthMode": false,
+        "excludeTags": [],
+        "includeTags": [],
+        "waitFor": "",
+        "timeout": "",
+        "maxAge": "2 days",
+        "ignoreSitemap": false,
+        "crawlEntireDomain": false,
+        "sitemap": "include",
+        "limit": "10",
+        "maxDepth": "",
+        "excludePaths": [],
+        "includePaths": [],
+        "includeSubdomains": false,
+        "search": "",
+        "scrapeContentFromSearchResults": true,
+        "timeBasedSearch": "",
+        "location": "",
+        "prompt": ""
+      },
+      "formats": [
+        "markdown"
+      ],
+      "sources": [
+        "web"
+      ],
+      "categories": [],
+      "jsonSchema": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "company_name": {
+            "type": "string"
+          },
+          "company_description": {
+            "type": "string"
+          }
         }
-      }
+      },
+      "agent": {
+        "model": "FIRE-1"
+      },
+      "url": "",
+      "endpoint": "extract"
     },
-    "agent": {
-      "model": "FIRE-1"
+    "status": "success",
+    "version": "OMdR0QZvEg-hBKOR9U7G7",
+    "data": {
+      "criminals": [
+        {
+          "name": "Courtney Sands",
+          "alias": "Joshua",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.20-AM-495x400.jpeg",
+          "location": "Kingston Central Police"
+        },
+        {
+          "name": "Kafore Barley",
+          "alias": "Hunter/Sparta/CJ",
+          "crimes": "Shooting with Intent",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.21-AM-1-495x400.jpeg",
+          "location": "Clarendon Police"
+        },
+        {
+          "name": "Gaveen Hurd",
+          "alias": "Bones",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.21-AM-495x400.jpeg",
+          "location": "St Mary Police"
+        },
+        {
+          "name": "Allen Gordon",
+          "alias": "Zoo Roy",
+          "crimes": "Fraudulent Conversion",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.34-AM-1-495x400.jpeg",
+          "location": "St James Police"
+        },
+        {
+          "name": "Omoy Largie",
+          "alias": "Not Nice",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-07-at-3.17.40-PM-495x400.jpeg",
+          "location": "St James Police"
+        },
+        {
+          "name": "Shane Morgan",
+          "alias": "Okay",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-07-at-3.17.41-PM-1-495x400.jpeg",
+          "location": "St James Police"
+        },
+        {
+          "name": "Stephano Johnson",
+          "alias": "Steph/Beggy Don/SAJ/Bowl Head",
+          "crimes": "Shooting with Intent",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-07-at-3.17.41-PM-495x400.jpeg",
+          "location": "St James Police"
+        },
+        {
+          "name": "Rasheed Thomas",
+          "alias": "Kobe",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.19-AM-1-495x400.jpeg",
+          "location": "Duhaney Park Police"
+        },
+        {
+          "name": "Edward Francis",
+          "alias": "Eddie",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.19-AM-495x400.jpeg",
+          "location": "Duhaney Park Police"
+        },
+        {
+          "name": "Derrick Johnson",
+          "alias": "Bush",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.18-AM-4-495x400.jpeg",
+          "location": "Hunts Bay Police"
+        },
+        {
+          "name": "Rameish Griffiths",
+          "alias": "Nikki",
+          "crimes": "Wounding with Intent",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.18-AM-3-495x400.jpeg",
+          "location": "Duhaney Park Police"
+        },
+        {
+          "name": "Jermaine Richards",
+          "alias": "Reechie",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.18-AM-2-495x400.jpeg",
+          "location": "Duhaney Park Police"
+        },
+        {
+          "name": "Christopher Duffus",
+          "alias": "Chippa",
+          "crimes": "Murder and Shooting",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.18-AM-1-495x400.jpeg",
+          "location": "Duhaney Park Police"
+        },
+        {
+          "name": "Courtney Ashley",
+          "alias": "Ashley Orlando Willliams/Bloodstain/Biggs",
+          "crimes": "Murder and Shooting",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.17-AM-2-495x400.jpeg",
+          "location": "Duhaney Park Police"
+        },
+        {
+          "name": "Conroy Forrester",
+          "alias": "Junior",
+          "crimes": "Fraudulent Conversion",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.17-AM-495x400.jpeg",
+          "location": "Negril Police"
+        },
+        {
+          "name": "Yanic Reid",
+          "alias": "Yammo",
+          "crimes": "Murder",
+          "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/01/WhatsApp-Image-2025-01-22-at-1.17.34-PM-1-1-495x400.jpeg",
+          "location": "Duhaney Park Police"
+        }
+      ]
     },
-    "url": "",
-    "endpoint": "extract"
-  },
-  "status": "success",
-  "version": "OMdR0QZvEg-hBKOR9U7G7",
-  "data": {
-    "criminals": [
-      {
-        "name": "Courtney Sands",
-        "alias": "Joshua",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.20-AM-495x400.jpeg",
-        "location": "Kingston Central Police"
-      },
-      {
-        "name": "Kafore Barley",
-        "alias": "Hunter/Sparta/CJ",
-        "crimes": "Shooting with Intent",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.21-AM-1-495x400.jpeg",
-        "location": "Clarendon Police"
-      },
-      {
-        "name": "Gaveen Hurd",
-        "alias": "Bones",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.21-AM-495x400.jpeg",
-        "location": "St Mary Police"
-      },
-      {
-        "name": "Allen Gordon",
-        "alias": "Zoo Roy",
-        "crimes": "Fraudulent Conversion",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-21-at-11.15.34-AM-1-495x400.jpeg",
-        "location": "St James Police"
-      },
-      {
-        "name": "Omoy Largie",
-        "alias": "Not Nice",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-07-at-3.17.40-PM-495x400.jpeg",
-        "location": "St James Police"
-      },
-      {
-        "name": "Shane Morgan",
-        "alias": "Okay",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-07-at-3.17.41-PM-1-495x400.jpeg",
-        "location": "St James Police"
-      },
-      {
-        "name": "Stephano Johnson",
-        "alias": "Steph/Beggy Don/SAJ/Bowl Head",
-        "crimes": "Shooting with Intent",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/05/WhatsApp-Image-2025-05-07-at-3.17.41-PM-495x400.jpeg",
-        "location": "St James Police"
-      },
-      {
-        "name": "Rasheed Thomas",
-        "alias": "Kobe",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.19-AM-1-495x400.jpeg",
-        "location": "Duhaney Park Police"
-      },
-      {
-        "name": "Edward Francis",
-        "alias": "Eddie",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.19-AM-495x400.jpeg",
-        "location": "Duhaney Park Police"
-      },
-      {
-        "name": "Derrick Johnson",
-        "alias": "Bush",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.18-AM-4-495x400.jpeg",
-        "location": "Hunts Bay Police"
-      },
-      {
-        "name": "Rameish Griffiths",
-        "alias": "Nikki",
-        "crimes": "Wounding with Intent",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.18-AM-3-495x400.jpeg",
-        "location": "Duhaney Park Police"
-      },
-      {
-        "name": "Jermaine Richards",
-        "alias": "Reechie",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.18-AM-2-495x400.jpeg",
-        "location": "Duhaney Park Police"
-      },
-      {
-        "name": "Christopher Duffus",
-        "alias": "Chippa",
-        "crimes": "Murder and Shooting",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.18-AM-1-495x400.jpeg",
-        "location": "Duhaney Park Police"
-      },
-      {
-        "name": "Courtney Ashley",
-        "alias": "Ashley Orlando Willliams/Bloodstain/Biggs",
-        "crimes": "Murder and Shooting",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.17-AM-2-495x400.jpeg",
-        "location": "Duhaney Park Police"
-      },
-      {
-        "name": "Conroy Forrester",
-        "alias": "Junior",
-        "crimes": "Fraudulent Conversion",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-30-at-9.05.17-AM-495x400.jpeg",
-        "location": "Negril Police"
-      },
-      {
-        "name": "Yanic Reid",
-        "alias": "Yammo",
-        "crimes": "Murder",
-        "imageurl": "https://jcf.gov.jm/wp-content/uploads/2025/01/WhatsApp-Image-2025-01-22-at-1.17.34-PM-1-1-495x400.jpeg",
-        "location": "Duhaney Park Police"
-      }
-    ]
-  },
-  "sources": {
-    "criminals[0]": [],
-    "criminals[1]": [],
-    "criminals[2]": [],
-    "criminals[3]": [],
-    "criminals[4]": [],
-    "criminals[5]": [],
-    "criminals[6]": [],
-    "criminals[7]": [],
-    "criminals[8]": [],
-    "criminals[9]": [],
-    "criminals[10]": [],
-    "criminals[11]": [],
-    "criminals[12]": [],
-    "criminals[13]": [],
-    "criminals[14]": [],
-    "criminals[15]": []
+    "sources": {
+      "criminals[0]": [],
+      "criminals[1]": [],
+      "criminals[2]": [],
+      "criminals[3]": [],
+      "criminals[4]": [],
+      "criminals[5]": [],
+      "criminals[6]": [],
+      "criminals[7]": [],
+      "criminals[8]": [],
+      "criminals[9]": [],
+      "criminals[10]": [],
+      "criminals[11]": [],
+      "criminals[12]": [],
+      "criminals[13]": [],
+      "criminals[14]": [],
+      "criminals[15]": []
+    }
   }
-}

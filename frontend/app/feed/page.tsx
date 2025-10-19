@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, Clock, AlertTriangle, CheckCircle, Eye, MessageSquare } from "lucide-react"
+import { MapPin, Clock, AlertTriangle, CheckCircle } from "lucide-react"
 
 export default function FeedPage() {
   const [filter, setFilter] = useState<"all" | "active" | "investigating" | "resolved">("all")
