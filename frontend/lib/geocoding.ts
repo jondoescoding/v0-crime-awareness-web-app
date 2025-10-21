@@ -12,6 +12,9 @@ type GeocodeResponse = {
 
 const API_PATH = "/api/geocode"
 
+// In-memory cache to prevent duplicate API calls for the same address
+const geocodeCache = new Map<string, GeocodeResponse | null>()
+
 function buildRequestBody(params: GeocodeParams) {
   return {
     incidentAddress: params.incidentAddress ?? null,
@@ -21,7 +24,23 @@ function buildRequestBody(params: GeocodeParams) {
   }
 }
 
+function getCacheKey(params: GeocodeParams): string {
+  return JSON.stringify({
+    incidentAddress: params.incidentAddress ?? null,
+    neighborhood: params.neighborhood ?? null,
+    cityState: params.cityState ?? null,
+    county: params.county ?? null,
+  })
+}
+
 export async function geocodeFullAddress(params: GeocodeParams): Promise<GeocodeResponse | null> {
+  const cacheKey = getCacheKey(params)
+  
+  // Check cache first to avoid redundant API calls
+  if (geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey) ?? null
+  }
+
   try {
     const response = await fetch(API_PATH, {
       method: "POST",
@@ -32,6 +51,8 @@ export async function geocodeFullAddress(params: GeocodeParams): Promise<Geocode
     })
 
     if (!response.ok) {
+      // Cache the null result to avoid retrying failed addresses
+      geocodeCache.set(cacheKey, null)
       return null
     }
 
@@ -43,12 +64,18 @@ export async function geocodeFullAddress(params: GeocodeParams): Promise<Geocode
       typeof data.lng === "number" &&
       Number.isFinite(data.lng)
     ) {
+      // Cache successful result
+      geocodeCache.set(cacheKey, data)
       return data
     }
 
+    // Cache null for invalid data
+    geocodeCache.set(cacheKey, null)
     return null
   } catch (error) {
     console.error("Failed to geocode address", error)
+    // Cache null for errors to avoid repeated failed attempts
+    geocodeCache.set(cacheKey, null)
     return null
   }
 }

@@ -166,24 +166,27 @@ export default function FeedPage() {
               <Filter className="mr-2 h-4 w-4" />
               {showFilters ? "Hide filters" : "Advanced filters"}
             </Button>
-            <Button 
-              onClick={handleGenerateReport} 
-              disabled={isGeneratingReport}
-              className="shrink-0"
-              size="lg"
-            >
-              {isGeneratingReport ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Generate 24h Report
-                </>
-              )}
-            </Button>
+            {/* HIDDEN: Generate 24h Report Button - Code preserved for future use */}
+            {false && (
+              <Button 
+                onClick={handleGenerateReport} 
+                disabled={isGeneratingReport}
+                className="shrink-0"
+                size="lg"
+              >
+                {isGeneratingReport ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generate 24h Report
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>
